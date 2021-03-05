@@ -74,7 +74,7 @@ if __name__=='__main__':
         M=model.module
     # model=model.to(device)
     for e in range(e,epoch):
-        # operate()
+        operate()
         torch.save({
             'model':model.cpu(),
             'e':e,
@@ -82,4 +82,3 @@ if __name__=='__main__':
             'args':args,
             'loader':loader
         },savefolder+'/chk.pth')
-        exit()
