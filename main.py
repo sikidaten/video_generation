@@ -53,9 +53,9 @@ if __name__=='__main__':
         # lossDreal=lambda x:-U.min(x-1,0)
         # lossDfake=lambda x:-U.min(-x-1,0)
         # lossG=lambda x:-x
-        def lossDreal(x):(x-1)**2
-        def lossDfake(x):x**2
-        def lossG (x):(x-1)**2
+        def lossDreal(x):return (x-1)**2
+        def lossDfake(x):return x**2
+        def lossG (x):return (x-1)**2
         if args.dataset=='celeba':
             loader=torch.utils.data.DataLoader(CelebADataset(torchvision.datasets.CelebA('/opt/data','all',download=True),args.size,args.zsize),batch_size=args.batchsize,num_workers=4,shuffle=True)
         if args.optimizer=='adam':
