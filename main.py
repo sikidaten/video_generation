@@ -11,7 +11,7 @@ from dataset import CelebADataset
 def operate(phase):
     for i,(noise,realimg )in enumerate(loader):
         B,C,H,W=realimg.shape
-        lossDreal,lossDfake,lossG,fake=model.trainbatch(noise.to(device),realimg.to(device))
+        lossDreal,lossDfake,lossG,fake=M.trainbatch(noise.to(device),realimg.to(device))
 
         # fid=cal_fid(realimg)
         # IS=cal_is(realimg)
@@ -67,10 +67,12 @@ if __name__=='__main__':
     import json
     with open(f'{savefolder}/args.json','w') as f:
         json.dump(args.__dict__,f)
+    M=model
     #TODO multi gpu
-    # if device=='cuda':
-    #     model=torch.nn.DataParallel(model)
-    model=model.to(device)
+    if device=='cuda':
+        model=torch.nn.DataParallel(model)
+        M=model.module
+    # model=model.to(device)
     for e in range(e,epoch):
         operate('train')
         torch.save({
