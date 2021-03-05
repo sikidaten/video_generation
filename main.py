@@ -8,7 +8,7 @@ from model.dcgan import DCGAN
 import core as Co
 from dataset import CelebADataset
 
-def operate(phase):
+def operate():
     for i,(noise,realimg )in enumerate(loader):
         B,C,H,W=realimg.shape
         lossDreal,lossDfake,lossG,fake=M.trainbatch(noise.to(device),realimg.to(device))
@@ -70,11 +70,11 @@ if __name__=='__main__':
     M=model
     #TODO multi gpu
     if device=='cuda':
-        model=torch.nn.DataParallel(model)
+        model=torch.nn.DataParallel(model).to(device)
         M=model.module
     # model=model.to(device)
     for e in range(e,epoch):
-        operate('train')
+        operate()
         torch.save({
             'model':model.cpu(),
             'e':e,
