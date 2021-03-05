@@ -15,7 +15,7 @@ def operate():
 
         # fid=cal_fid(realimg)
         # IS=cal_is(realimg)
-        print(f'{e}/{epoch}:{i}/{len(loader)}, Dreal:{lossDreal}, Dfake:{lossDfake}, G:{lossG}')
+        print(f'{e}/{epoch}:{i}/{len(loader)}, Dreal:{lossDreal:.2f}, Dfake:{lossDfake:.2f}, G:{lossG:.2f}')
         Co.addvalue(writer,'loss:Dreal',lossDreal,e)
         Co.addvalue(writer,'loss:Dfake',lossDfake,e)
         Co.addvalue(writer,'loss:G',lossG,e)
@@ -50,12 +50,12 @@ if __name__=='__main__':
         writer=chk['writer']
         args=chk['args']
     else:
-        lossDreal=lambda x:-U.min(x-1,0)
-        lossDfake=lambda x:-U.min(-x-1,0)
-        lossG=lambda x:-x
-        lossDreal=lambda x:(x-1)**2
-        lossDfake=lambda x:x**2
-        lossG=lambda x:(x-1)**22
+        # lossDreal=lambda x:-U.min(x-1,0)
+        # lossDfake=lambda x:-U.min(-x-1,0)
+        # lossG=lambda x:-x
+        def lossDreal(x):(x-1)**2
+        def lossDfake(x):x**2
+        def lossG (x):(x-1)**2
         if args.dataset=='celeba':
             loader=torch.utils.data.DataLoader(CelebADataset(torchvision.datasets.CelebA('/opt/data','all',download=True),args.size,args.zsize),batch_size=args.batchsize,num_workers=4,shuffle=True)
         if args.optimizer=='adam':
@@ -74,7 +74,7 @@ if __name__=='__main__':
         M=model.module
     # model=model.to(device)
     for e in range(e,epoch):
-        operate()
+        # operate()
         torch.save({
             'model':model.cpu(),
             'e':e,
@@ -82,3 +82,4 @@ if __name__=='__main__':
             'args':args,
             'loader':loader
         },savefolder+'/chk.pth')
+        exit()
