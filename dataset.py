@@ -6,6 +6,7 @@ class CelebADataset():
         self.zsize=zsize
         self.transforms=T.Compose([T.Resize(size),T.CenterCrop(size),T.ToTensor(),T.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
     def __len__(self):
+        return 12
         return len(self.dataset)
     def __getitem__(self, idx):
         im,cls=self.dataset[idx]

@@ -10,7 +10,6 @@ from dataset import CelebADataset
 
 def operate():
     for i,(noise,realimg )in enumerate(loader):
-        B,C,H,W=realimg.shape
         lossDreal,lossDfake,lossG,fake=M.trainbatch(noise.to(device),realimg.to(device))
 
         # fid=cal_fid(realimg)
@@ -72,13 +71,14 @@ if __name__=='__main__':
     if device=='cuda':
         model=torch.nn.DataParallel(model).to(device)
         M=model.module
-    # model=model.to(device)
     for e in range(e,epoch):
         operate()
         torch.save({
-            'model':model.cpu(),
+            'model':model.to('cpu'),
             'e':e,
             'writer':writer,
             'args':args,
             'loader':loader
         },savefolder+'/chk.pth')
+        model.to(device)
+        Co.savedic(writer,savefolder,"")
