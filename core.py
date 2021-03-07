@@ -33,7 +33,7 @@ def savedic(dict,fol,title,save=True,):
         axdic[key].legend()
     #fig.legend()
     plt.title(title)
-    plt.ylim(0,1)
+    # plt.ylim(0,1)
     fig.savefig(f'{fol}/graphs.png')
     plt.close()
     with open(f'{fol}/data.pkl','wb') as f:

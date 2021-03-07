@@ -35,6 +35,7 @@ if __name__=='__main__':
     parser.add_argument('--savefolder',default='tmp')
     parser.add_argument('--checkpoint',default=None)
     parser.add_argument('--size',default=128,type=int)
+    parser.add_argument('--loss',default='mse')
     args=parser.parse_args()
     epoch=args.epoch
     device='cuda' if torch.cuda.is_available() else 'cpu'
@@ -49,12 +50,14 @@ if __name__=='__main__':
         writer=chk['writer']
         args=chk['args']
     else:
-        # lossDreal=lambda x:-U.min(x-1,0)
-        # lossDfake=lambda x:-U.min(-x-1,0)
-        # lossG=lambda x:-x
-        def lossDreal(x):return (x-1)**2
-        def lossDfake(x):return x**2
-        def lossG (x):return (x-1)**2
+        if args.loss=='hinge':
+            def lossDreal(x):return -U.min(x-1,0)
+            def lossDfake(x):return -U.min(-x-1,0)
+            def lossG(x):return -x
+        else:
+            def lossDreal(x):return (x-1)**2
+            def lossDfake(x):return x**2
+            def lossG (x):return (x-1)**2
         if args.dataset=='celeba':
             loader=torch.utils.data.DataLoader(CelebADataset(torchvision.datasets.CelebA('/opt/data','all',download=True),args.size,args.zsize),batch_size=args.batchsize,num_workers=4,shuffle=True)
         if args.optimizer=='adam':
