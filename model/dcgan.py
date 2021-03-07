@@ -23,7 +23,7 @@ class Discriminator(nn.Module):
     def __init__(self, in_ch, features):
         super(Discriminator, self).__init__()
         self.inconv = nn.Conv2d(in_ch, features, 1)
-        self.conv = nn.Sequential(*[ScaleConvBnRelu(features, features, 0.5) for _ in range(3)])
+        self.conv = nn.Sequential(*[nn.Sequential(*[ScaleConvBnRelu(features, features, 0.5),ScaleConvBnRelu(features,features,1)])for _ in range(3)])
         self.gap = GlobalAveragePooling()
         self.outconv = nn.Conv2d(features, 3, 1)
 
@@ -36,10 +36,10 @@ class Discriminator(nn.Module):
 
 
 class DCGAN(nn.Module):
-    def __init__(self, optimizerG, optimizerD, lossDreal, lossDfake, lossG, zsize):
+    def __init__(self, optimizerG, optimizerD, lossDreal, lossDfake, lossG, zsize,feature):
         super(DCGAN, self).__init__()
-        self.generator = Generator(zsize, 128, 3)
-        self.discriminator = Discriminator(3, 128)
+        self.generator = Generator(zsize, feature, 3)
+        self.discriminator = Discriminator(3, feature)
         self.optG = optimizerG(self.parameters())
         self.optD = optimizerD(self.parameters())
         self.lossDreal = lossDreal
@@ -53,7 +53,7 @@ class DCGAN(nn.Module):
             # train D
             fake = self.generator(noise)
             realout = self.discriminator(realimg)
-            fakeout = self.discriminator(fake)
+            fakeout = self.discriminator(fake.detach())
             lossDfake = self.lossDfake(fakeout).mean()
             lossDreal = self.lossDreal(realout).mean()
             (lossDreal + lossDfake).backward()

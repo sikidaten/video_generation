@@ -21,7 +21,7 @@ def operate():
         # Co.addvalue(writer,'fid',fid,e)
         # Co.addvalue(writer,'IS',IS,e)
         if i==0:
-            save_image((fake*0.5)+0.5,f'{savefolder}/{e}.png')
+            save_image(((realimg+0.5)*0.5),f'{savefolder}/{e}.png')
 
 if __name__=='__main__':
     import argparse
@@ -36,6 +36,7 @@ if __name__=='__main__':
     parser.add_argument('--checkpoint',default=None)
     parser.add_argument('--size',default=128,type=int)
     parser.add_argument('--loss',default='mse')
+    parser.add_argument('--feature',default=128,type=int)
     args=parser.parse_args()
     epoch=args.epoch
     device='cuda' if torch.cuda.is_available() else 'cpu'
@@ -51,8 +52,8 @@ if __name__=='__main__':
         args=chk['args']
     else:
         if args.loss=='hinge':
-            def lossDreal(x):return -U.min(x-1,0)
-            def lossDfake(x):return -U.min(-x-1,0)
+            def lossDreal(x):return F.relu(1 - x)
+            def lossDfake(x):return F.relu(1 + x)
             def lossG(x):return -x
         else:
             def lossDreal(x):return (x-1)**2
@@ -63,7 +64,7 @@ if __name__=='__main__':
         if args.optimizer=='adam':
             optimizer=torch.optim.Adam
         if args.model == 'dcgan':
-            model = DCGAN(optimizerG=optimizer,optimizerD=optimizer,lossDreal=lossDreal,lossDfake=lossDfake,lossG=lossG,zsize=args.zsize)
+            model = DCGAN(optimizerG=optimizer,optimizerD=optimizer,lossDreal=lossDreal,lossDfake=lossDfake,lossG=lossG,zsize=args.zsize,feature=args.feature)
         writer={}
         e=0
     import json

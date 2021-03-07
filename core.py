@@ -12,7 +12,7 @@ def addvalue(dict,key,value,epoch):
             dict[key].append([value])
         else:
             dict[key][epoch].append(value)
-def savedic(dict,fol,title,save=True,):
+def savedic(dict,fol,title=""):
     n=1
     numgraph=len(set([i.split(':')[0] for i in dict]))
     axdic={}
