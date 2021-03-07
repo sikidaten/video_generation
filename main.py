@@ -21,7 +21,7 @@ def operate():
         # Co.addvalue(writer,'fid',fid,e)
         # Co.addvalue(writer,'IS',IS,e)
         if i==0:
-            save_image(((realimg+0.5)*0.5),f'{savefolder}/{e}.png')
+            save_image(((fake*0.5)+0.5),f'{savefolder}/{e}.png')
 
 if __name__=='__main__':
     import argparse
