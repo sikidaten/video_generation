@@ -49,25 +49,26 @@ class DCGAN(nn.Module):
     def trainbatch(self, noise, realimg, trainD=True):
         lossDfake = torch.tensor([0.])
         lossDreal = torch.tensor([0.])
-        fake = self.generator(noise)
-        if trainD:
-            # train D
-            self.optD.zero_grad()
-            realout = self.discriminator(realimg)
-            lossDreal = self.lossDreal(realout).mean()
-            lossDreal.backward()
-            fakeout = self.discriminator(fake.detach())
-            lossDfake = self.lossDfake(fakeout).mean()
-            lossDfake.backward()
-            # (lossDreal + lossDfake).backward()
-            self.optD.step()
 
         # train G
+        fake = self.generator(noise)
         self.optG.zero_grad()
         fakeout = self.discriminator(fake)
         lossG = self.lossG(fakeout).mean()
         lossG.backward()
         self.optG.step()
+
+        if trainD:
+            # train D
+            self.optD.zero_grad()
+            realout = self.discriminator(realimg)
+            lossDreal = self.lossDreal(realout).mean()
+            fakeout = self.discriminator(fake.detach())
+            lossDfake = self.lossDfake(fakeout).mean()
+            (lossDreal + lossDfake).backward()
+            self.optD.step()
+
+
 
         return lossDreal.item(), lossDfake.item(), lossG.item(), fake.detach().cpu()
 
