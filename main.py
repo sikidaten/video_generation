@@ -35,7 +35,7 @@ if __name__=='__main__':
     parser.add_argument('--savefolder',default='tmp')
     parser.add_argument('--checkpoint',default=None)
     parser.add_argument('--size',default=64,type=int)
-    parser.add_argument('--loss',default='mse')
+    parser.add_argument('--loss',default='hinge')
     parser.add_argument('--feature',default=128,type=int)
     args=parser.parse_args()
     epoch=args.epoch
@@ -52,17 +52,17 @@ if __name__=='__main__':
         args=chk['args']
     else:
         if args.loss=='hinge':
-            def lossDreal(x):return F.relu(1 - x)
-            def lossDfake(x):return F.relu(1 + x)
-            def lossG(x):return -x
+            def lossDreal(x):return F.relu(1 - x).mean()
+            def lossDfake(x):return F.relu(1 + x).mean()
+            def lossG(x):return -x.mean()
         elif args.loss=='bce':
-            def lossDreal(x):return F.binary_cross_entropy(x,torch.ones_like(x))
-            def lossDfake(x):return F.binary_cross_entropy(x,torch.zeros_like(x))
-            def lossG(x):return F.binary_cross_entropy(x,torch.ones_like(x))
+            def lossDreal(x):return F.binary_cross_entropy(x,torch.ones(x.shape[0],device=x.device))
+            def lossDfake(x):return F.binary_cross_entropy(x,torch.zeros(x.shape[0],device=x.device))
+            def lossG(x):return F.binary_cross_entropy(x,torch.ones(x.shape[0],device=x.device))
         else:
-            def lossDreal(x):return (x-1)**2
-            def lossDfake(x):return x**2
-            def lossG (x):return (x-1)**2
+            def lossDreal(x):return ((x-1)**2).mean()
+            def lossDfake(x):return (x**2).mean()
+            def lossG (x):return ((x-1)**2).mean()
         if args.dataset=='celeba':
             loader=torch.utils.data.DataLoader(CelebADataset(torchvision.datasets.CelebA('/opt/data','all',download=True),args.size,args.zsize),batch_size=args.batchsize,num_workers=4,shuffle=True)
         if args.optimizer=='adam':
