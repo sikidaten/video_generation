@@ -34,7 +34,7 @@ if __name__=='__main__':
     parser.add_argument('--epoch',default=100,type=int)
     parser.add_argument('--savefolder',default='tmp')
     parser.add_argument('--checkpoint',default=None)
-    parser.add_argument('--size',default=128,type=int)
+    parser.add_argument('--size',default=64,type=int)
     parser.add_argument('--loss',default='mse')
     parser.add_argument('--feature',default=128,type=int)
     args=parser.parse_args()
@@ -55,6 +55,10 @@ if __name__=='__main__':
             def lossDreal(x):return F.relu(1 - x)
             def lossDfake(x):return F.relu(1 + x)
             def lossG(x):return -x
+        elif args.loss=='bce':
+            def lossDreal(x):return F.binary_cross_entropy(x,torch.ones_like(x))
+            def lossDfake(x):return F.binary_cross_entropy(x,torch.zeros_like(x))
+            def lossG(x):return F.binary_cross_entropy(x,torch.ones_like(x))
         else:
             def lossDreal(x):return (x-1)**2
             def lossDfake(x):return x**2
