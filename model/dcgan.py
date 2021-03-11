@@ -55,19 +55,19 @@ class Discriminator(nn.Module):
             nn.LeakyReLU(0.2, inplace=True),
             # state size. (ndf) x 32 x 32
             nn.Conv2d(features, features * 2, 4, 2, 1, bias=False),
-            nn.BatchNorm2d(features * 2),
+            # nn.BatchNorm2d(features * 2),
             nn.LeakyReLU(0.2, inplace=True),
             # state size. (ndf*2) x 16 x 16
             nn.Conv2d(features * 2, features * 4, 4, 2, 1, bias=False),
-            nn.BatchNorm2d(features * 4),
+            # nn.BatchNorm2d(features * 4),
             nn.LeakyReLU(0.2, inplace=True),
             # state size. (ndf*4) x 8 x 8
             nn.Conv2d(features * 4, features * 8, 4, 2, 1, bias=False),
-            nn.BatchNorm2d(features * 8),
+            # nn.BatchNorm2d(features * 8),
             nn.LeakyReLU(0.2, inplace=True),
             # state size. (ndf*8) x 4 x 4
             nn.Conv2d(features * 8, 1, 4, 1, 0, bias=False),
-            nn.Sigmoid()
+            # nn.Sigmoid()
         )
 
     def forward(self, x):
@@ -84,49 +84,33 @@ class DCGAN(nn.Module):
         super(DCGAN, self).__init__()
         self.generator = Generator(zsize, feature, 3)
         self.discriminator = Discriminator(3, feature)
-        self.optG = optimizerG(self.generator.parameters(),lr=0.0002,betas=(0.5,0.999))
-        self.optD = optimizerD(self.discriminator.parameters(),lr=0.0002,betas=(0.5,0.999))
+        self.optG = optimizerG(self.generator.parameters())
+        self.optD = optimizerD(self.discriminator.parameters())
         self.lossDreal = lossDreal
         self.lossDfake = lossDfake
         self.lossG = lossG
 
     def trainbatch(self, noise, realimg, trainD=True):
-        # lossDfake = torch.tensor([0.])
-        # lossDreal = torch.tensor([0.])
-        #
-        # fake = self.generator(noise)
-        # self.optG.zero_grad()
-        # fakeout = self.discriminator(fake)
-        # lossG = self.lossG(fakeout).mean()
-        # lossG.backward()
-        # self.optG.step()
-        #
-        # if trainD:
-            # self.optD.zero_grad()
-            # realout = self.discriminator(realimg)
-            # lossDreal = self.lossDreal(realout).mean()
-            # fakeout = self.discriminator(fake.detach())
-            # lossDfake = self.lossDfake(fakeout).mean()
-            # (lossDreal + lossDfake).backward()
-            # self.optD.step()
-        self.optD.zero_grad()
-        realout=self.discriminator(realimg)
-        lossDreal=self.lossDreal(realout)
-        lossDreal.backward()
 
-        fake=self.generator(noise)
-        fakeout=self.discriminator(fake.detach())
-        lossDfake=self.lossDfake(fakeout)
-        lossDfake.backward()
-        self.optD.step()
 
-        self.optG.zero_grad()
-        # fake=self.generator(noise)
-        fakeout=self.discriminator(fake)
-        lossG=self.lossG(fakeout).reshape(1)
+        fake = self.generator(noise)
+        if trainD:
+            realout = self.discriminator(realimg)
+            lossDreal = self.lossDreal(realout).mean()
+            fakeout = self.discriminator(fake.detach())
+            lossDfake = self.lossDfake(fakeout).mean()
+            (lossDreal + lossDfake).backward()
+            self.optD.step()
+            self.optD.zero_grad()
+        else:
+            lossDfake = torch.tensor([0.])
+            lossDreal = torch.tensor([0.])
+
+        fakeout = self.discriminator(fake)
+        lossG = self.lossG(fakeout).mean()
         lossG.backward()
         self.optG.step()
-
+        self.optG.zero_grad()
 
         return lossDreal.item(), lossDfake.item(), lossG.item(), fake.detach().cpu()
 

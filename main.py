@@ -52,14 +52,14 @@ if __name__=='__main__':
         args=chk['args']
     else:
         if args.loss=='hinge':
-            def lossDreal(x):return F.relu(1 - x).mean()
-            def lossDfake(x):return F.relu(1 + x).mean()
-            def lossG(x):return -x.mean()
+            def lossDreal(x):return F.relu(-x+1).mean()
+            def lossDfake(x):return F.relu(x+1).mean()
+            def lossG(x):return (-x).mean()
         elif args.loss=='bce':
             def lossDreal(x):return F.binary_cross_entropy(x.reshape(-1),torch.ones(x.shape[0],device=x.device))
             def lossDfake(x):return F.binary_cross_entropy(x.reshape(-1),torch.zeros(x.shape[0],device=x.device))
             def lossG(x):return F.binary_cross_entropy(x.reshape(-1),torch.ones(x.shape[0],device=x.device))
-        else:
+        elif args.loss=='mse':
             def lossDreal(x):return ((x-1)**2).mean()
             def lossDfake(x):return (x**2).mean()
             def lossG (x):return ((x-1)**2).mean()
