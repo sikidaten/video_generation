@@ -41,9 +41,10 @@ if __name__=='__main__':
     parser.add_argument('--size',default=64,type=int)
     parser.add_argument('--loss',default='hinge')
     parser.add_argument('--feature',default=128,type=int)
+    parser.add_argument('--cpu',default=False,action='store_true')
     args=parser.parse_args()
     epoch=args.epoch
-    device='cuda' if torch.cuda.is_available() else 'cpu'
+    device='cuda' if torch.cuda.is_available() and not args.cpu else 'cpu'
     savefolder='data/'+args.savefolder
     os.makedirs(savefolder,exist_ok=True)
     if args.checkpoint:
