@@ -106,4 +106,4 @@ if __name__=='__main__':
         },savefolder+'/chk.pth')
         model.to(device)
         Co.savedic(writer,savefolder,"")
-        Co.send_line_notify(f'{savefolder}/graphs.png',f'dcgan:{args.loss}')
+    Co.send_line_notify(f'{savefolder}/graphs.png',f'dcgan:{args.loss}')
