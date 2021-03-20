@@ -59,9 +59,9 @@ if __name__=='__main__':
             def lossDfake(x):return F.relu(x+1).mean()
             def lossG(x):return (-x).mean()
         elif args.loss=='bce':
-            def lossDreal(x):return F.binary_cross_entropy(x.reshape(-1),torch.ones(x.shape[0],device=x.device))
-            def lossDfake(x):return F.binary_cross_entropy(x.reshape(-1),torch.zeros(x.shape[0],device=x.device))
-            def lossG(x):return F.binary_cross_entropy(x.reshape(-1),torch.ones(x.shape[0],device=x.device))
+            def lossDreal(x):return F.binary_cross_entropy(torch.sigmoid(x.reshape(-1)),torch.ones(x.shape[0],device=x.device))
+            def lossDfake(x):return F.binary_cross_entropy(torch.sigmoid(x.reshape(-1)),torch.zeros(x.shape[0],device=x.device))
+            def lossG(x):return F.binary_cross_entropy(torch.sigmoid(x.reshape(-1)),torch.ones(x.shape[0],device=x.device))
         elif args.loss=='mse':
             def lossDreal(x):return ((x-1)**2).mean()
             def lossDfake(x):return (x**2).mean()
@@ -89,6 +89,7 @@ if __name__=='__main__':
     #     with open(inc_gt_outpath,'wb') as f:
     #         pkl.dump([gtmean,gtsigma],f)
     M=model
+    device='cpu'
     #TODO multi gpu
     if device=='cuda':
         model.discriminator=torch.nn.DataParallel(model.discriminator).to(device)
