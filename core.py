@@ -46,4 +46,11 @@ def save(model,fol,dic,argdic,title=''):
     torch.save(model.state_dict(), savedmodelpath)
     with open(f'{fol}/args.json','w') as f:
         json.dump(argdic,f)
-
+import requests
+def send_line_notify(imagepath,notification_message='training_result'):
+    line_notify_token ='ui4IbiPkvedb3pjEGkEfSLSv1ZWyZVOxm955n41EHTy'
+    line_notify_api = 'https://notify-api.line.me/api/notify'
+    headers = {'Authorization': f'Bearer {line_notify_token}'}
+    files = {'imageFile': open(imagepath,'rb')}
+    data={'message':notification_message}
+    requests.post(line_notify_api,data=data, headers = headers, files = files)
