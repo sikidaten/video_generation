@@ -7,21 +7,25 @@ from torchvision.utils import save_image
 from model.dcgan import DCGAN
 import core as Co
 from dataset import CelebADataset
-
+import os
+import pickle as pkl
 def operate():
+    # fakemean=torch.zeros(2048)
+    # fakesigma=torch.zeros(2048)
+    # MVI=U.MeanVariance_iter()
     for i,(noise,realimg )in enumerate(loader):
         lossDreal,lossDfake,lossG,fake=M.trainbatch(noise.to(device),realimg.to(device))
-
-        # fid=cal_fid(realimg)
-        # IS=cal_is(realimg)
+        # fakesigma,fakemean=MVI.iter(fakesigma,fakemean,inception(fake.detach()))
         print(f'{e}/{epoch}:{i}/{len(loader)}, Dreal:{lossDreal:.2f}, Dfake:{lossDfake:.2f}, G:{lossG:.2f}')
         Co.addvalue(writer,'loss:Dreal',lossDreal,e)
         Co.addvalue(writer,'loss:Dfake',lossDfake,e)
         Co.addvalue(writer,'loss:G',lossG,e)
-        # Co.addvalue(writer,'fid',fid,e)
-        # Co.addvalue(writer,'IS',IS,e)
-        if i==0:
-            save_image(((fake*0.5)+0.5),f'{savefolder}/{e}.png')
+        if i == 0:
+            save_image(((fake * 0.5) + 0.5), f'{savefolder}/{e}.png')
+    # fid=U.fid(gtmean,gtsigma,fakemean,fakesigma)
+    # IS=cal_is(realimg)
+    # Co.addvalue(writer,'fid',fid,e)
+    # Co.addvalue(writer,'IS',IS,e)
 
 if __name__=='__main__':
     import argparse
@@ -41,7 +45,6 @@ if __name__=='__main__':
     epoch=args.epoch
     device='cuda' if torch.cuda.is_available() else 'cpu'
     savefolder='data/'+args.savefolder
-    import os
     os.makedirs(savefolder,exist_ok=True)
     if args.checkpoint:
         chk=torch.load(args.checkpoint)
@@ -65,6 +68,8 @@ if __name__=='__main__':
             def lossG (x):return ((x-1)**2).mean()
         if args.dataset=='celeba':
             loader=torch.utils.data.DataLoader(CelebADataset(torchvision.datasets.CelebA('/opt/data','all',download=True),args.size,args.zsize),batch_size=args.batchsize,num_workers=4,shuffle=True)
+        else:
+            assert False,'celeba is allowed only.'
         if args.optimizer=='adam':
             optimizer=torch.optim.Adam
         if args.model == 'dcgan':
@@ -74,11 +79,21 @@ if __name__=='__main__':
     import json
     with open(f'{savefolder}/args.json','w') as f:
         json.dump(args.__dict__,f)
+    inception=torchvision.models.inception_v3(pretrained=True)
+
+    # if os.path.exists(inc_gt_outpath:=f'inception_{args.dataset}_{args.size}.pkl'):
+    #     with open(inc_gt_outpath,'rb') as f:
+    #         gtmean,gtsigma=pkl.load(f)
+    # else:
+    #     gtmean,gtsigma=U.make_gt_inception(inception,loader)
+    #     with open(inc_gt_outpath,'wb') as f:
+    #         pkl.dump([gtmean,gtsigma],f)
     M=model
     #TODO multi gpu
     if device=='cuda':
-        model=torch.nn.DataParallel(model).to(device)
-        M=model.module
+        model.discriminator=torch.nn.DataParallel(model.discriminator).to(device)
+        model.generator=torch.nn.DataParallel(model.generator).to(device)
+        # M=model.module
     for e in range(e,epoch):
         operate()
         torch.save({

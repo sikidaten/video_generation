@@ -83,11 +83,22 @@ class DCGAN(nn.Module):
         super(DCGAN, self).__init__()
         self.generator = Generator(zsize, feature, 3)
         self.discriminator = Discriminator(3, feature)
-        self.optG = optimizerG(self.generator.parameters())
-        self.optD = optimizerD(self.discriminator.parameters())
+        self.generator.apply(self.weights_init)
+        self.discriminator.apply(self.weights_init)
+
+        self.optG = optimizerG(self.generator.parameters(),lr=0.0002,betas=(0.5,0.999))
+        self.optD = optimizerD(self.discriminator.parameters(),lr=0.0002,betas=(0.5,0.999))
         self.lossDreal = lossDreal
         self.lossDfake = lossDfake
         self.lossG = lossG
+
+    def weights_init(self,m):
+        classname = m.__class__.__name__
+        if classname.find('Conv') != -1:
+            nn.init.normal_(m.weight.data, 0.0, 0.02)
+        elif classname.find('BatchNorm') != -1:
+            nn.init.normal_(m.weight.data, 1.0, 0.02)
+            nn.init.constant_(m.bias.data, 0)
 
     def trainbatch(self, noise, realimg, trainD=True):
 
