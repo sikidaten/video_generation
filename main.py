@@ -89,7 +89,6 @@ if __name__=='__main__':
     #     with open(inc_gt_outpath,'wb') as f:
     #         pkl.dump([gtmean,gtsigma],f)
     M=model
-    device='cpu'
     #TODO multi gpu
     if device=='cuda':
         model.discriminator=torch.nn.DataParallel(model.discriminator).to(device)
