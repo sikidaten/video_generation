@@ -1,4 +1,5 @@
 import torch
+torch.manual_seed(999)
 import torch.nn as nn
 import torch.nn.functional as F
 import utils.util as U
@@ -22,8 +23,8 @@ def operate():
         Co.addvalue(writer,'loss:Dreal',lossDreal,e)
         Co.addvalue(writer,'loss:Dfake',lossDfake,e)
         Co.addvalue(writer,'loss:G',lossG,e)
-        if i == 0:
-            save_image(((fake * 0.5) + 0.5), f'{savefolder}/{e}.png')
+        if i %1000== 0:
+            save_image(((fake * 0.5) + 0.5), f'{savefolder}/{e}_{i}.png')
     # fid=U.fid(gtmean,gtsigma,fakemean,fakesigma)
     # IS=cal_is(realimg)
     # Co.addvalue(writer,'fid',fid,e)
@@ -62,9 +63,9 @@ if __name__=='__main__':
             def lossDfake(x):return F.relu(x+1).mean()
             def lossG(x):return (-x).mean()
         elif args.loss=='bce':
-            def lossDreal(x):return F.binary_cross_entropy(torch.sigmoid(x.reshape(-1)),torch.ones(x.shape[0],device=x.device))
-            def lossDfake(x):return F.binary_cross_entropy(torch.sigmoid(x.reshape(-1)),torch.zeros(x.shape[0],device=x.device))
-            def lossG(x):return F.binary_cross_entropy(torch.sigmoid(x.reshape(-1)),torch.ones(x.shape[0],device=x.device))
+            def lossDreal(x):return F.binary_cross_entropy_with_logits(x.reshape(-1),torch.ones(x.shape[0],device=x.device))
+            def lossDfake(x):return F.binary_cross_entropy_with_logits(x.reshape(-1),torch.zeros(x.shape[0],device=x.device))
+            def lossG(x):return F.binary_cross_entropy_with_logits(x.reshape(-1),torch.ones(x.shape[0],device=x.device))
         elif args.loss=='mse':
             def lossDreal(x):return ((x-1)**2).mean()
             def lossDfake(x):return (x**2).mean()
@@ -92,7 +93,6 @@ if __name__=='__main__':
     #     with open(inc_gt_outpath,'wb') as f:
     #         pkl.dump([gtmean,gtsigma],f)
     M=model
-    #TODO multi gpu
     if device=='cuda':
         model.discriminator=torch.nn.DataParallel(model.discriminator).to(device)
         model.generator=torch.nn.DataParallel(model.generator).to(device)
