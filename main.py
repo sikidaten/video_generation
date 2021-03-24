@@ -11,7 +11,6 @@ from dataset import CelebADataset
 import os
 import pickle as pkl
 from model.inception import inception_v3
-import torchviz as TV
 def operate():
     fakemean=torch.zeros(2048)
     fakesigma=torch.zeros(2048)
