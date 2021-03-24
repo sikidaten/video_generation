@@ -1,0 +1,135 @@
+digraph {
+	graph [size="16.05,16.05"]
+	node [align=left fontsize=12 height=0.2 ranksep=0.1 shape=box style=filled]
+	140188399861872 [label=MeanBackward0 fillcolor=darkolivegreen1]
+	140188399861824 -> 140188399861872
+	140188399861824 [label=MeanBackward0]
+	140188399886048 -> 140188399861824
+	140188399886048 [label=NegBackward]
+	140188399885760 -> 140188399886048
+	140188399885760 [label=CudnnConvolutionBackward]
+	140188399885568 -> 140188399885760
+	140188399885568 [label=LeakyReluBackward1]
+	140188399885136 -> 140188399885568
+	140188399885136 [label=CudnnBatchNormBackward]
+	140188399884944 -> 140188399885136
+	140188399884944 [label=CudnnConvolutionBackward]
+	140188399884464 -> 140188399884944
+	140188399884464 [label=LeakyReluBackward1]
+	140188399884032 -> 140188399884464
+	140188399884032 [label=CudnnBatchNormBackward]
+	140188399883840 -> 140188399884032
+	140188399883840 [label=CudnnConvolutionBackward]
+	140188399883264 -> 140188399883840
+	140188399883264 [label=LeakyReluBackward1]
+	140188399882928 -> 140188399883264
+	140188399882928 [label=CudnnBatchNormBackward]
+	140188399882640 -> 140188399882928
+	140188399882640 [label=CudnnConvolutionBackward]
+	140188399914864 -> 140188399882640
+	140188399914864 [label=LeakyReluBackward1]
+	140188399914528 -> 140188399914864
+	140188399914528 [label=CudnnConvolutionBackward]
+	140188438794752 -> 140188399914528
+	140188438794752 [label=ScatterBackward]
+	140188399914048 -> 140188438794752
+	140188399914048 [label=TanhBackward]
+	140188399913760 -> 140188399914048
+	140188399913760 [label=CudnnConvolutionTransposeBackward]
+	140188399913472 -> 140188399913760
+	140188399913472 [label=ReluBackward1]
+	140188399913136 -> 140188399913472
+	140188399913136 [label=CudnnBatchNormBackward]
+	140188399912848 -> 140188399913136
+	140188399912848 [label=CudnnConvolutionTransposeBackward]
+	140188399912368 -> 140188399912848
+	140188399912368 [label=ReluBackward1]
+	140188399912032 -> 140188399912368
+	140188399912032 [label=CudnnBatchNormBackward]
+	140188399911744 -> 140188399912032
+	140188399911744 [label=CudnnConvolutionTransposeBackward]
+	140188399911264 -> 140188399911744
+	140188399911264 [label=ReluBackward1]
+	140188399943632 -> 140188399911264
+	140188399943632 [label=CudnnBatchNormBackward]
+	140188399943344 -> 140188399943632
+	140188399943344 [label=CudnnConvolutionTransposeBackward]
+	140188399942864 -> 140188399943344
+	140188399942864 [label=ReluBackward1]
+	140188399942432 -> 140188399942864
+	140188399942432 [label=CudnnBatchNormBackward]
+	140188399942240 -> 140188399942432
+	140188399942240 [label=CudnnConvolutionTransposeBackward]
+	140188399941760 -> 140188399942240
+	140188399941760 [label="generator.module.main.0.weight
+ (128, 1024, 4, 4)" fillcolor=lightblue]
+	140188399942096 -> 140188399942432
+	140188399942096 [label="generator.module.main.1.weight
+ (1024)" fillcolor=lightblue]
+	140188399941952 -> 140188399942432
+	140188399941952 [label="generator.module.main.1.bias
+ (1024)" fillcolor=lightblue]
+	140188399942720 -> 140188399943344
+	140188399942720 [label="generator.module.main.3.weight
+ (1024, 512, 4, 4)" fillcolor=lightblue]
+	140188399943200 -> 140188399943632
+	140188399943200 [label="generator.module.main.4.weight
+ (512)" fillcolor=lightblue]
+	140188399943056 -> 140188399943632
+	140188399943056 [label="generator.module.main.4.bias
+ (512)" fillcolor=lightblue]
+	140188399911120 -> 140188399911744
+	140188399911120 [label="generator.module.main.6.weight
+ (512, 256, 4, 4)" fillcolor=lightblue]
+	140188399911600 -> 140188399912032
+	140188399911600 [label="generator.module.main.7.weight
+ (256)" fillcolor=lightblue]
+	140188399911552 -> 140188399912032
+	140188399911552 [label="generator.module.main.7.bias
+ (256)" fillcolor=lightblue]
+	140188399912224 -> 140188399912848
+	140188399912224 [label="generator.module.main.9.weight
+ (256, 128, 4, 4)" fillcolor=lightblue]
+	140188399912800 -> 140188399913136
+	140188399912800 [label="generator.module.main.10.weight
+ (128)" fillcolor=lightblue]
+	140188399912656 -> 140188399913136
+	140188399912656 [label="generator.module.main.10.bias
+ (128)" fillcolor=lightblue]
+	140188399913424 -> 140188399913760
+	140188399913424 [label="generator.module.main.12.weight
+ (128, 3, 4, 4)" fillcolor=lightblue]
+	140188399914240 -> 140188399914528
+	140188399914240 [label="discriminator.module.main.0.weight
+ (128, 3, 4, 4)" fillcolor=lightblue]
+	140188399914720 -> 140188399882640
+	140188399914720 [label="discriminator.module.main.2.weight
+ (256, 128, 4, 4)" fillcolor=lightblue]
+	140188399882592 -> 140188399882928
+	140188399882592 [label="discriminator.module.main.3.weight
+ (256)" fillcolor=lightblue]
+	140188399882448 -> 140188399882928
+	140188399882448 [label="discriminator.module.main.3.bias
+ (256)" fillcolor=lightblue]
+	140188399883216 -> 140188399883840
+	140188399883216 [label="discriminator.module.main.5.weight
+ (512, 256, 4, 4)" fillcolor=lightblue]
+	140188399883696 -> 140188399884032
+	140188399883696 [label="discriminator.module.main.6.weight
+ (512)" fillcolor=lightblue]
+	140188399883552 -> 140188399884032
+	140188399883552 [label="discriminator.module.main.6.bias
+ (512)" fillcolor=lightblue]
+	140188399884320 -> 140188399884944
+	140188399884320 [label="discriminator.module.main.8.weight
+ (1024, 512, 4, 4)" fillcolor=lightblue]
+	140188399884800 -> 140188399885136
+	140188399884800 [label="discriminator.module.main.9.weight
+ (1024)" fillcolor=lightblue]
+	140188399884656 -> 140188399885136
+	140188399884656 [label="discriminator.module.main.9.bias
+ (1024)" fillcolor=lightblue]
+	140188399885424 -> 140188399885760
+	140188399885424 [label="discriminator.module.main.11.weight
+ (1, 1024, 4, 4)" fillcolor=lightblue]
+}

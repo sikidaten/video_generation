@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import utils as U
+import utils.util as U
 import torchvision
 from torchvision.utils import save_image
 from model.dcgan import DCGAN
@@ -9,10 +9,12 @@ import core as Co
 from dataset import CelebADataset
 import os
 import pickle as pkl
+from model.inception import inception_v3
+import torchviz as TV
 def operate():
-    # fakemean=torch.zeros(2048)
-    # fakesigma=torch.zeros(2048)
-    # MVI=U.MeanVariance_iter()
+    fakemean=torch.zeros(2048)
+    fakesigma=torch.zeros(2048)
+    MVI=U.MeanVariance_iter()
     for i,(noise,realimg )in enumerate(loader):
         lossDreal,lossDfake,lossG,fake=M.trainbatch(noise.to(device),realimg.to(device))
         # fakesigma,fakemean=MVI.iter(fakesigma,fakemean,inception(fake.detach()))
@@ -80,7 +82,7 @@ if __name__=='__main__':
     import json
     with open(f'{savefolder}/args.json','w') as f:
         json.dump(args.__dict__,f)
-    inception=torchvision.models.inception_v3(pretrained=True)
+    inception=inception_v3(pretrained=True,aux_logits=False)
 
     # if os.path.exists(inc_gt_outpath:=f'inception_{args.dataset}_{args.size}.pkl'):
     #     with open(inc_gt_outpath,'rb') as f:

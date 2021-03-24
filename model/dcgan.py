@@ -1,8 +1,6 @@
 import torch
 import torch.nn as nn
 
-from model.utils import ScaleConvBnRelu, GlobalAveragePooling
-
 
 class Generator(nn.Module):
     def __init__(self, in_ch, feature, out_ch):
@@ -121,6 +119,7 @@ class DCGAN(nn.Module):
         lossG.backward()
         self.optG.step()
         self.optG.zero_grad()
+        self.optD.zero_grad()
 
         return lossDreal.item(), lossDfake.item(), lossG.item(), fake.detach().cpu()
 

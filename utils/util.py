@@ -1,4 +1,7 @@
 import torch
+import torch.nn.functional as F
+import numpy as np
+import scipy
 def min(x,a):
     return torch.stack([torch.zeros_like(x)+a,x]).min(0)[0]
 
@@ -10,7 +13,8 @@ class MeanVariance_iter:
     def __init__(self):
         self.n=0
     def iter(self,s,mu,xn):
-        B,C=xn.shape
+        B,C,_,_=xn.shape
+        xn=xn.view(B,C)
         mun=(self.n*mu+xn.sum(dim=0))/(self.n+B)
         sn=(self.n*(s+mu**2)+(xn**2).sum(dim=0))/(self.n+B)-mun**2
         self.n+=xn.shape[0]
@@ -21,13 +25,20 @@ def covariancematrix(x):
 def sqrtm(x):
     m = input.detach().cpu().numpy().astype(np.float_)
     sqrtm = torch.from_numpy(scipy.linalg.sqrtm(m).real).to(input)
+    return sqrtm
 #TODO D
-def make_gt_inception(model,loader):
+def make_gt_inception(model,loader,resize=True,device='cpu'):
+    model=model.to(device)
     mean=torch.zeros(2048)
     sigma=torch.zeros(2048)
     MVI=MeanVariance_iter()
     for i,data in enumerate(loader):
-        output=model(data)
+        print(i,len(loader))
+        img=data[1]
+        print(img.shape)
+        if resize:
+            img=F.interpolate(img,size=(299,299),mode='bilinear',align_corners=False)
+        output=model(img.to(device))
         mean,sigma=MVI.iter(sigma,mean,output)
     return mean,sigma
 def fid(gtsigma,gtmean,fakesigma,fakemean):
