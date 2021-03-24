@@ -23,8 +23,8 @@ def operate():
         Co.addvalue(writer,'loss:Dfake',lossDfake,e)
         Co.addvalue(writer,'loss:G',lossG,e)
         if i %1000== 0:
-            save_image(((fake * 0.5) + 0.5), fakepath:=f'{savefolder}/{e}_{i}.png')
-            Co.send_line_notify(f'{fakepath}',f'dcgan:{args.loss},{e}_{i}')
+            save_image(((fake * 0.5) + 0.5), f'{savefolder}/{e}_{i}.png')
+            Co.send_line_notify(f'{savefolder}/{e}_{i}.png',f'dcgan:{args.loss},{e}_{i}')
     # fid=U.fid(gtmean,gtsigma,fakemean,fakesigma)
     # IS=cal_is(realimg)
     # Co.addvalue(writer,'fid',fid,e)
