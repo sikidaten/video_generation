@@ -47,7 +47,7 @@ if __name__ == '__main__':
     parser.add_argument('--loss', default='hinge')
     parser.add_argument('--feature', default=128, type=int)
     parser.add_argument('--cpu', default=False, action='store_true')
-    parser.add_argument('--dataset',default='../data')
+    parser.add_argument('--datasetpath',default='../data')
     args = parser.parse_args()
     epoch = args.epoch
     device = 'cuda' if torch.cuda.is_available() and not args.cpu else 'cpu'
