@@ -47,6 +47,7 @@ if __name__ == '__main__':
     parser.add_argument('--loss', default='hinge')
     parser.add_argument('--feature', default=128, type=int)
     parser.add_argument('--cpu', default=False, action='store_true')
+    parser.add_argument('--dataset',default='../data')
     args = parser.parse_args()
     epoch = args.epoch
     device = 'cuda' if torch.cuda.is_available() and not args.cpu else 'cpu'
@@ -99,7 +100,7 @@ if __name__ == '__main__':
                 return ((x - 1) ** 2).mean()
         if args.dataset == 'celeba':
             loader = torch.utils.data.DataLoader(
-                CelebADataset(torchvision.datasets.CelebA('/opt/data', 'all', download=True), args.size, args.zsize),
+                CelebADataset(torchvision.datasets.CelebA(args.dataset, 'all', download=True), args.size, args.zsize),
                 batch_size=args.batchsize, num_workers=4, shuffle=True)
         else:
             assert False, 'celeba is allowed only.'
