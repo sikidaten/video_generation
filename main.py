@@ -16,7 +16,7 @@ def operate():
     fakemvci = U.MeanCoVariance_iter(device)
     for i, (noise, realimg) in enumerate(loader):
         lossDreal, lossDfake, lossG, fake = M.trainbatch(noise.to(device), realimg.to(device))
-        fakemvci.iter(inception(fake.detach()))
+        fakemvci.iter(inception(fake.detach().to(device)))
         print(f'{e}/{epoch}:{i}/{len(loader)}, Dreal:{lossDreal:.2f}, Dfake:{lossDfake:.2f}, G:{lossG:.2f}')
         Co.addvalue(writer, 'loss:Dreal', lossDreal, e)
         Co.addvalue(writer, 'loss:Dfake', lossDfake, e)
