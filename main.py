@@ -1,6 +1,8 @@
 import torch
 
 torch.manual_seed(999)
+import json
+import pickle as pkl
 import torch.nn.functional as F
 import utils.util as U
 import torchvision
@@ -9,7 +11,6 @@ from model.dcgan import DCGAN
 import core as Co
 from dataset import CelebADataset
 import os
-from model.inception import inception_v3
 
 
 def operate():
@@ -47,7 +48,7 @@ if __name__ == '__main__':
     parser.add_argument('--loss', default='hinge')
     parser.add_argument('--feature', default=128, type=int)
     parser.add_argument('--cpu', default=False, action='store_true')
-    parser.add_argument('--datasetpath',default='../data')
+    parser.add_argument('--datasetpath', default='../data')
     args = parser.parse_args()
     epoch = args.epoch
     device = 'cuda' if torch.cuda.is_available() and not args.cpu else 'cpu'
@@ -55,7 +56,8 @@ if __name__ == '__main__':
     os.makedirs(savefolder, exist_ok=True)
     # inception = inception_v3(pretrained=True, aux_logits=False)
     from gtmodel import InceptionV3
-    inception=InceptionV3([3]).to(device)
+
+    inception = InceptionV3([3]).to(device)
     if args.checkpoint:
         chk = torch.load(args.checkpoint)
         loader = chk['loader']
@@ -111,8 +113,14 @@ if __name__ == '__main__':
                           lossG=lossG, zsize=args.zsize, feature=args.feature)
         writer = {}
         e = 0
-        realsigma, realmu = U.make_gt_inception(inception, loader, device)
-        import json
+        path = f'__{args.dataset}_real.pkl'
+        if os.path.exists(path):
+            with open(path, 'rb') as f:
+                realsigma, realmu = pkl.load(f)
+        else:
+            realsigma, realmu = U.make_gt_inception(inception, loader, device)
+            with open(path, 'wb') as f:
+                pkl.dump([realsigma, realmu], f)
 
         with open(f'{savefolder}/args.json', 'w') as f:
             json.dump(args.__dict__, f)
