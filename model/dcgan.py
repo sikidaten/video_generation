@@ -36,7 +36,7 @@ class Generator(nn.Module):
         # x = self.upconv(x)
         # x = self.outconv(x)
         # x = torch.tanh(x)
-        x=self.main(x)
+        x = self.main(x)
         return x
 
 
@@ -72,25 +72,30 @@ class Discriminator(nn.Module):
         # x = self.conv(x)
         # x = self.gap(x)
         # x = self.outconv(x)
-        x=self.main(x)
+        x = self.main(x)
         return x
 
 
+from zviz import Zviz
+
+
 class DCGAN(nn.Module):
-    def __init__(self, optimizerG, optimizerD, lossDreal, lossDfake, lossG, zsize,feature):
+    def __init__(self, optimizerG, optimizerD, lossDreal, lossDfake, lossG, zsize, feature):
         super(DCGAN, self).__init__()
         self.generator = Generator(zsize, feature, 3)
         self.discriminator = Discriminator(3, feature)
         self.generator.apply(self.weights_init)
         self.discriminator.apply(self.weights_init)
-
-        self.optG = optimizerG(self.generator.parameters(),lr=0.0002,betas=(0.5,0.999))
-        self.optD = optimizerD(self.discriminator.parameters(),lr=0.0002,betas=(0.5,0.999))
+        self.zviz = Zviz({'G': self.generator, 'D': self.discriminator})  ###
+        self.optG = optimizerG(self.generator.parameters(), lr=0.0002, betas=(0.5, 0.999))
+        self.optD = optimizerD(self.discriminator.parameters(), lr=0.0002, betas=(0.5, 0.999))
+        self.zviz.setoptimizer(self.optG, 'optG')
+        self.zviz.setoptimizer(self.optD, 'optD')
         self.lossDreal = lossDreal
         self.lossDfake = lossDfake
         self.lossG = lossG
 
-    def weights_init(self,m):
+    def weights_init(self, m):
         classname = m.__class__.__name__
         if classname.find('Conv') != -1:
             nn.init.normal_(m.weight.data, 0.0, 0.02)
@@ -100,27 +105,35 @@ class DCGAN(nn.Module):
 
     def trainbatch(self, noise, realimg, trainD=True):
 
-
         fake = self.generator(noise)
         if trainD:
             realout = self.discriminator(realimg)
             lossDreal = self.lossDreal(realout).mean()
             fakeout = self.discriminator(fake.detach())
             lossDfake = self.lossDfake(fakeout).mean()
-            (lossDreal + lossDfake).backward()
-            self.optD.step()
-            self.optD.zero_grad()
+            # (lossDreal + lossDfake).backward() ###
+            self.zviz.backward(lossDfake)  ###
+            self.zviz.backward(lossDreal)  ###
+            self.zviz.step('optD')  ###
+            self.zviz.zero_grad('optD')  ###
+            # self.optD.step() ###
+            # self.optD.zero_grad()###
         else:
             lossDfake = torch.tensor([0.])
             lossDreal = torch.tensor([0.])
 
         fakeout = self.discriminator(fake)
         lossG = self.lossG(fakeout).mean()
-        lossG.backward()
-        self.optG.step()
-        self.optG.zero_grad()
-        self.optD.zero_grad()
-
+        self.zviz.backward(lossG)
+        self.zviz.step('optG')
+        self.zviz.zero_grad('optG')
+        self.zviz.zero_grad('optD')
+        # lossG.backward()###
+        # self.optG.step()###
+        # self.optG.zero_grad()###
+        # self.optD.zero_grad()###
+        self.zviz.clear()
+        self.zviz.disable_forever()
         return lossDreal.item(), lossDfake.item(), lossG.item(), fake.detach().cpu()
 
 
