@@ -115,6 +115,7 @@ if __name__ == '__main__':
         e = 0
         path = f'__{args.dataset}_real.pkl'
         if os.path.exists(path):
+            print('load real stats')
             with open(path, 'rb') as f:
                 realsigma, realmu = pkl.load(f)
         else:
