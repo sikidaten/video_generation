@@ -28,7 +28,7 @@ def operate():
     # get FID
     fid = U.fid(realsigma, realmu, *fakemvci.get(isbias=True))
     # IS=cal_is(realimg)
-    Co.addvalue(writer, 'fid', fid, e)
+    Co.addvalue(writer, 'acc:fid', fid, e)
     # Co.addvalue(writer,'IS',IS,e)
     print(f'{fid=:.2f}')
 
@@ -37,7 +37,7 @@ if __name__ == '__main__':
     import argparse
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batchsize', default=8, type=int)
+    parser.add_argument('--batchsize', default=32, type=int)
     parser.add_argument('--model', default='dcgan')
     parser.add_argument('--dataset', default='celeba')
     parser.add_argument('--optimizer', default='adam')
@@ -50,6 +50,7 @@ if __name__ == '__main__':
     parser.add_argument('--feature', default=128, type=int)
     parser.add_argument('--cpu', default=False, action='store_true')
     parser.add_argument('--datasetpath', default='../data')
+    parser.add_argument('--debug',default=False,action='store_true')
     args = parser.parse_args()
     epoch = args.epoch
     device = 'cuda' if torch.cuda.is_available() and not args.cpu else 'cpu'
@@ -83,7 +84,7 @@ if __name__ == '__main__':
         lossG= lambda x:((x - 1) ** 2).mean()
     if args.dataset == 'celeba':
         loader = torch.utils.data.DataLoader(
-            CelebADataset(torchvision.datasets.CelebA(args.datasetpath, 'all', download=True), args.size, args.zsize),
+            CelebADataset(torchvision.datasets.CelebA(args.datasetpath, 'all', download=True), args.size, args.zsize,debug=args.debug),
             batch_size=args.batchsize, num_workers=4, shuffle=True)
     else:
         assert False, 'celeba is allowed only.'

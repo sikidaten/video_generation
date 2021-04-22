@@ -87,8 +87,8 @@ def make_gt_inception(model, loader, device):
 
 
 def fid(cogtsigma, gtmean, cofakesigma, fakemean):
-    return torch.norm(gtmean - fakemean) ** 2 \
-           + torch.trace(cogtsigma) + torch.trace(cofakesigma) - 2 * (torch.trace(sqrtm(cogtsigma @ cofakesigma)))
+    return (torch.norm(gtmean - fakemean) ** 2 \
+           + torch.trace(cogtsigma) + torch.trace(cofakesigma) - 2 * (torch.trace(sqrtm(cogtsigma @ cofakesigma)))).item()
 
 
 if __name__ == '__main__':
