@@ -86,8 +86,6 @@ if __name__ == '__main__':
         loader = torch.utils.data.DataLoader(
             CelebADataset(torchvision.datasets.CelebA(args.datasetpath, 'all', download=True), args.size, args.zsize,debug=args.debug),
             batch_size=args.batchsize, num_workers=4, shuffle=True)
-    else:
-        assert False, 'celeba is allowed only.'
     if args.optimizer == 'adam':
         optimizer = torch.optim.Adam
     if args.model == 'dcgan':
