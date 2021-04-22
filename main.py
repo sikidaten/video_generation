@@ -16,7 +16,7 @@ import os
 def operate():
     fakemvci = U.MeanCoVariance_iter(device)
     for i, (noise, realimg) in enumerate(loader):
-        lossDreal, lossDfake, lossG, fake = M.trainbatch(noise.to(device), realimg.to(device))
+        lossDreal, lossDfake, lossG, fake = model.trainbatch(noise.to(device), realimg.to(device))
         fakemvci.iter(inception(fake.detach().to(device))[0])
         print(f'{e}/{epoch}:{i}/{len(loader)}, Dreal:{lossDreal:.2f}, Dfake:{lossDfake:.2f}, G:{lossG:.2f}')
         Co.addvalue(writer, 'loss:Dreal', lossDreal, e)
@@ -30,6 +30,7 @@ def operate():
     # IS=cal_is(realimg)
     Co.addvalue(writer, 'fid', fid, e)
     # Co.addvalue(writer,'IS',IS,e)
+    print(f'{fid=:.2f}')
 
 
 if __name__ == '__main__':
@@ -54,93 +55,75 @@ if __name__ == '__main__':
     device = 'cuda' if torch.cuda.is_available() and not args.cpu else 'cpu'
     savefolder = 'data/' + args.savefolder
     os.makedirs(savefolder, exist_ok=True)
-    # inception = inception_v3(pretrained=True, aux_logits=False)
     from gtmodel import InceptionV3
 
     inception = InceptionV3([3]).to(device)
-    if args.checkpoint:
-        chk = torch.load(args.checkpoint)
-        loader = chk['loader']
-        model = chk['model']
-        e = chk['e']
-        writer = chk['writer']
-        args = chk['args']
-        realsigma, realmu = chk['realstats']
+
+    writer = {}
+    e = 0
+
+    # if args.checkpoint:
+    #     chk = torch.load(args.checkpoint)
+    #     modelparam = chk['modelparam']
+    #     e = chk['e']
+    #     writer = chk['writer']
+    #     args = chk['args']
+    #     realsigma, realmu = chk['realstats']
+    if args.loss == 'hinge':
+        lossDreal =lambda x:F.relu(-x + 1).mean()
+        lossDfake =lambda x: F.relu(x + 1).mean()
+        lossG =lambda x:(-x).mean()
+    elif args.loss == 'bce':
+        lossDreal =lambda x:F.binary_cross_entropy_with_logits(x.reshape(-1), torch.ones(x.shape[0], device=x.device))
+        lossDfake =lambda x:F.binary_cross_entropy_with_logits(x.reshape(-1), torch.zeros(x.shape[0], device=x.device))
+        lossG =lambda x:F.binary_cross_entropy_with_logits(x.reshape(-1), torch.ones(x.shape[0], device=x.device))
+    elif args.loss == 'mse':
+        lossDreal =lambda x:((x - 1) ** 2).mean()
+        lossDfake =lambda x: (x ** 2).mean()
+        lossG= lambda x:((x - 1) ** 2).mean()
+    if args.dataset == 'celeba':
+        loader = torch.utils.data.DataLoader(
+            CelebADataset(torchvision.datasets.CelebA(args.datasetpath, 'all', download=True), args.size, args.zsize),
+            batch_size=args.batchsize, num_workers=4, shuffle=True)
     else:
-        if args.loss == 'hinge':
-            def lossDreal(x):
-                return F.relu(-x + 1).mean()
+        assert False, 'celeba is allowed only.'
+    if args.optimizer == 'adam':
+        optimizer = torch.optim.Adam
+    if args.model == 'dcgan':
+        model = DCGAN(optimizerG=optimizer, optimizerD=optimizer, lossDreal=lossDreal, lossDfake=lossDfake,
+                      lossG=lossG, zsize=args.zsize, feature=args.feature)
 
+    # if args.checkpoint:
+    #     model.load_state_dict(modelparam)
 
-            def lossDfake(x):
-                return F.relu(x + 1).mean()
+    realstatspath = f'__{args.dataset}_real.pkl'
+    if os.path.exists(realstatspath):
+        print('load real stats')
+        with open(realstatspath, 'rb') as f:
+            realsigma, realmu = pkl.load(f)
+            realsigma = realsigma.to(device)
+            realmu = realmu.to(device)
+    else:
+        print('make real stats')
+        realsigma, realmu = U.make_gt_inception(inception, loader, device)
+        with open(realstatspath, 'wb') as f:
+            pkl.dump([realsigma.cpu(), realmu.cpu()], f)
+    with open(f'{savefolder}/args.json', 'w') as f:
+        json.dump(args.__dict__, f)
 
-
-            def lossG(x):
-                return (-x).mean()
-        elif args.loss == 'bce':
-            def lossDreal(x):
-                return F.binary_cross_entropy_with_logits(x.reshape(-1), torch.ones(x.shape[0], device=x.device))
-
-
-            def lossDfake(x):
-                return F.binary_cross_entropy_with_logits(x.reshape(-1), torch.zeros(x.shape[0], device=x.device))
-
-
-            def lossG(x):
-                return F.binary_cross_entropy_with_logits(x.reshape(-1), torch.ones(x.shape[0], device=x.device))
-        elif args.loss == 'mse':
-            def lossDreal(x):
-                return ((x - 1) ** 2).mean()
-
-
-            def lossDfake(x):
-                return (x ** 2).mean()
-
-
-            def lossG(x):
-                return ((x - 1) ** 2).mean()
-        if args.dataset == 'celeba':
-            loader = torch.utils.data.DataLoader(
-                CelebADataset(torchvision.datasets.CelebA(args.dataset, 'all', download=True), args.size, args.zsize),
-                batch_size=args.batchsize, num_workers=4, shuffle=True)
-        else:
-            assert False, 'celeba is allowed only.'
-        if args.optimizer == 'adam':
-            optimizer = torch.optim.Adam
-        if args.model == 'dcgan':
-            model = DCGAN(optimizerG=optimizer, optimizerD=optimizer, lossDreal=lossDreal, lossDfake=lossDfake,
-                          lossG=lossG, zsize=args.zsize, feature=args.feature)
-        writer = {}
-        e = 0
-        path = f'__{args.dataset}_real.pkl'
-        if os.path.exists(path):
-            print('load real stats')
-            with open(path, 'rb') as f:
-                realsigma, realmu = pkl.load(f)
-        else:
-            realsigma, realmu = U.make_gt_inception(inception, loader, device)
-            with open(path, 'wb') as f:
-                pkl.dump([realsigma, realmu], f)
-
-        with open(f'{savefolder}/args.json', 'w') as f:
-            json.dump(args.__dict__, f)
-
-    M = model
     if device == 'cuda':
         model.discriminator = torch.nn.DataParallel(model.discriminator).to(device)
         model.generator = torch.nn.DataParallel(model.generator).to(device)
         # M=model.module
     for e in range(e, epoch):
         operate()
-        torch.save({
-            'model': model.to('cpu'),
-            'e': e,
-            'writer': writer,
-            'args': args,
-            'loader': loader,
-            'realstats': (realsigma, realmu),
-        }, savefolder + '/chk.pth')
+        # torch.save({
+        #     'modelparam': model.to('cpu').parameters(),
+        #     'e': e,
+        #     'writer': writer,
+        #     'args': args,
+        #     'realstats': (realsigma, realmu),
+        # }, savefolder + '/chk.pth')
         model.to(device)
         Co.savedic(writer, savefolder, "")
     Co.send_line_notify(f'{savefolder}/graphs.png', f'dcgan:{args.loss}')

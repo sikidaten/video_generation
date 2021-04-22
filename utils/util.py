@@ -39,6 +39,7 @@ class MeanCoVariance_iter:
         self.mu = torch.zeros(1).to(device)
 
     def iter(self, xn):
+        xn=xn.double()
         B, C, _, _ = xn.shape
         xn = xn.view(B, C)
         mun = (self.n * self.mu + xn.sum(dim=0)) / (self.n + B)
@@ -73,7 +74,7 @@ def make_gt_inception(model, loader, device):
             img = img.to(device)
             # print(img.shape)
             output = model(img)[0]
-            MCVI.iter(output.double())
+            MCVI.iter(output)
             ret.append(output)
 
     # ret = torch.cat(ret, dim=0)
