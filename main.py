@@ -24,13 +24,14 @@ def operate():
         Co.addvalue(writer, 'loss:G', lossG, e)
         if i % 1000 == 0:
             save_image(((fake * 0.5) + 0.5), f'{savefolder}/{e}_{i}.png')
-            Co.send_line_notify(f'{savefolder}/{e}_{i}.png', f'dcgan:{args.loss},{e}_{i}')
+            Co.send_line_notify(f'{savefolder}/{e}_{i}.png', f'dcgan:{args.__dict__},{e}_{i}')
     # get FID
     fid = U.fid(realsigma, realmu, *fakemvci.get(isbias=True))
     # IS=cal_is(realimg)
     Co.addvalue(writer, 'acc:fid', fid, e)
     # Co.addvalue(writer,'IS',IS,e)
     print(f'{fid=:.2f}')
+    Co.send_line_notify(f'{savefolder}/graphs.png',f'dcgan:{args.__dict__},{e}')
 
 
 if __name__ == '__main__':
@@ -51,6 +52,7 @@ if __name__ == '__main__':
     parser.add_argument('--cpu', default=False, action='store_true')
     parser.add_argument('--datasetpath', default='../data')
     parser.add_argument('--debug',default=False,action='store_true')
+    # parser.add_argument('--fakestatsper',default=10,type=int)
     args = parser.parse_args()
     epoch = args.epoch
     device = 'cuda' if torch.cuda.is_available() and not args.cpu else 'cpu'
