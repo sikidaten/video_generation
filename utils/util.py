@@ -9,8 +9,14 @@ def min(x, a):
 
 def max(x, a):
     return torch.stack([torch.zeros_like(x) + a, x]).max(0)[0]
-
-
+import cloudpickle
+def savecloudpickle(obj,path):
+    with open(path,'wb') as f:
+        f.write(cloudpickle.dumps(obj))
+def loadcloudpickle(path):
+    with open(path,'rb') as f:
+        _obj=cloudpickle.loads(f.read())
+    return _obj
 # class MeanVariance_iter:
 #     def __init__(self):
 #         self.n = 0

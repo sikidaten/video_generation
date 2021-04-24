@@ -5,9 +5,6 @@ import torch.nn as nn
 class Generator(nn.Module):
     def __init__(self, in_ch, feature, out_ch,acivation=nn.ReLU()):
         super(Generator, self).__init__()
-        # self.inconv = nn.Conv2d(in_ch, feature, 1)
-        # self.upconv = nn.Sequential(*[ScaleConvBnRelu(feature, feature, 2) for _ in range(7)])
-        # self.outconv = nn.Conv2d(feature, out_ch, 1)
         self.main = nn.Sequential(
             # input is Z, going into a convolution
             nn.ConvTranspose2d(in_ch, feature * 8, 4, 1, 0, bias=False),
@@ -32,10 +29,6 @@ class Generator(nn.Module):
         )
 
     def forward(self, x):
-        # x = self.inconv(x)
-        # x = self.upconv(x)
-        # x = self.outconv(x)
-        # x = torch.tanh(x)
         x = self.main(x)
         return x
 
@@ -43,10 +36,6 @@ class Generator(nn.Module):
 class Discriminator(nn.Module):
     def __init__(self, in_ch, features,activaiton=nn.LeakyReLU(0.2,inplace=True)):
         super(Discriminator, self).__init__()
-        # self.inconv = nn.Conv2d(in_ch, features, 1)
-        # self.conv = nn.Sequential(*[nn.Sequential(*[ScaleConvBnRelu(features, features, 0.5),ScaleConvBnRelu(features,features,1)])for _ in range(3)])
-        # self.gap = GlobalAveragePooling()
-        # self.outconv = nn.Conv2d(features, 3, 1)
         self.main = nn.Sequential(
             # input is (nc) x 64 x 64
             nn.Conv2d(in_ch, features, 4, 2, 1, bias=False),
@@ -68,10 +57,6 @@ class Discriminator(nn.Module):
         )
 
     def forward(self, x):
-        # x = self.inconv(x)
-        # x = self.conv(x)
-        # x = self.gap(x)
-        # x = self.outconv(x)
         x = self.main(x)
         return x
 
@@ -104,20 +89,17 @@ class DCGAN(nn.Module):
             nn.init.constant_(m.bias.data, 0)
 
     def trainbatch(self, noise, realimg, trainD=True):
-
+        # self.zviz.clear()
         fake = self.generator(noise)
         if trainD:
             realout = self.discriminator(realimg)
             lossDreal = self.lossDreal(realout).mean()
             fakeout = self.discriminator(fake.detach())
             lossDfake = self.lossDfake(fakeout).mean()
-            # (lossDreal + lossDfake).backward() ###
-            self.zviz.backward(lossDfake)  ###
-            self.zviz.backward(lossDreal)  ###
-            self.zviz.step('optD')  ###
-            self.zviz.zero_grad('optD')  ###
-            # self.optD.step() ###
-            # self.optD.zero_grad()###
+            self.zviz.backward(lossDfake)
+            self.zviz.backward(lossDreal)
+            self.zviz.step('optD')
+            self.zviz.zero_grad('optD')
         else:
             lossDfake = torch.tensor([0.])
             lossDreal = torch.tensor([0.])
@@ -128,10 +110,6 @@ class DCGAN(nn.Module):
         self.zviz.step('optG')
         self.zviz.zero_grad('optG')
         self.zviz.zero_grad('optD')
-        # lossG.backward()###
-        # self.optG.step()###
-        # self.optG.zero_grad()###
-        # self.optD.zero_grad()###
         self.zviz.clear()
         self.zviz.disable_forever()
         return lossDreal.item(), lossDfake.item(), lossG.item(), fake.detach().cpu()
