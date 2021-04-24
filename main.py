@@ -32,7 +32,7 @@ def operate():
     Co.addvalue(writer, 'acc:fid', fid, e)
     # Co.addvalue(writer,'IS',IS,e)
     print(f'fid:{fid:.2f}')
-    Co.send_line_notify(f'{savefolder}/graphs.png',f'dcgan:{args.__dict__},{e}')
+
 
 
 if __name__ == '__main__':
@@ -141,4 +141,4 @@ if __name__ == '__main__':
         }, savefolder + '/chk.pth')
         model.to(device)
         Co.savedic(writer, savefolder, "")
-    Co.send_line_notify(f'{savefolder}/graphs.png', f'dcgan:{args.loss}')
+        Co.send_line_notify(f'{savefolder}/graphs.png', f'dcgan:{args.__dict__},{e}')
