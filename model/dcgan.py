@@ -3,7 +3,7 @@ import torch.nn as nn
 
 
 class Generator(nn.Module):
-    def __init__(self, in_ch, feature, out_ch):
+    def __init__(self, in_ch, feature, out_ch,acivation=nn.ReLU()):
         super(Generator, self).__init__()
         # self.inconv = nn.Conv2d(in_ch, feature, 1)
         # self.upconv = nn.Sequential(*[ScaleConvBnRelu(feature, feature, 2) for _ in range(7)])
@@ -12,19 +12,19 @@ class Generator(nn.Module):
             # input is Z, going into a convolution
             nn.ConvTranspose2d(in_ch, feature * 8, 4, 1, 0, bias=False),
             nn.BatchNorm2d(feature * 8),
-            nn.ReLU(True),
+            acivation,
             # state size. (ngf*8) x 4 x 4
             nn.ConvTranspose2d(feature * 8, feature * 4, 4, 2, 1, bias=False),
             nn.BatchNorm2d(feature * 4),
-            nn.ReLU(True),
+            acivation,
             # state size. (ngf*4) x 8 x 8
             nn.ConvTranspose2d(feature * 4, feature * 2, 4, 2, 1, bias=False),
             nn.BatchNorm2d(feature * 2),
-            nn.ReLU(True),
+            acivation,
             # state size. (ngf*2) x 16 x 16
             nn.ConvTranspose2d(feature * 2, feature, 4, 2, 1, bias=False),
             nn.BatchNorm2d(feature),
-            nn.ReLU(True),
+            acivation,
             # state size. (ngf) x 32 x 32
             nn.ConvTranspose2d(feature, 3, 4, 2, 1, bias=False),
             nn.Tanh()
@@ -41,7 +41,7 @@ class Generator(nn.Module):
 
 
 class Discriminator(nn.Module):
-    def __init__(self, in_ch, features):
+    def __init__(self, in_ch, features,activaiton=nn.LeakyReLU(0.2,inplace=True)):
         super(Discriminator, self).__init__()
         # self.inconv = nn.Conv2d(in_ch, features, 1)
         # self.conv = nn.Sequential(*[nn.Sequential(*[ScaleConvBnRelu(features, features, 0.5),ScaleConvBnRelu(features,features,1)])for _ in range(3)])
@@ -50,19 +50,19 @@ class Discriminator(nn.Module):
         self.main = nn.Sequential(
             # input is (nc) x 64 x 64
             nn.Conv2d(in_ch, features, 4, 2, 1, bias=False),
-            nn.LeakyReLU(0.2, inplace=True),
+            activaiton,
             # state size. (ndf) x 32 x 32
             nn.Conv2d(features, features * 2, 4, 2, 1, bias=False),
             nn.BatchNorm2d(features * 2),
-            nn.LeakyReLU(0.2, inplace=True),
+            activaiton,
             # state size. (ndf*2) x 16 x 16
             nn.Conv2d(features * 2, features * 4, 4, 2, 1, bias=False),
             nn.BatchNorm2d(features * 4),
-            nn.LeakyReLU(0.2, inplace=True),
+            activaiton,
             # state size. (ndf*4) x 8 x 8
             nn.Conv2d(features * 4, features * 8, 4, 2, 1, bias=False),
             nn.BatchNorm2d(features * 8),
-            nn.LeakyReLU(0.2, inplace=True),
+            activaiton,
             # state size. (ndf*8) x 4 x 4
             nn.Conv2d(features * 8, 1, 4, 1, 0, bias=False),
         )
@@ -80,10 +80,10 @@ from zviz import Zviz
 
 
 class DCGAN(nn.Module):
-    def __init__(self, optimizerG, optimizerD, lossDreal, lossDfake, lossG, zsize, feature):
+    def __init__(self, optimizerG, optimizerD, lossDreal, lossDfake, lossG, zsize, feature,g_activation=nn.ReLU(inplace=True),d_activation=nn.LeakyReLU(0.2,inplace=True)):
         super(DCGAN, self).__init__()
-        self.generator = Generator(zsize, feature, 3)
-        self.discriminator = Discriminator(3, feature)
+        self.generator = Generator(zsize, feature, 3,acivation=g_activation)
+        self.discriminator = Discriminator(3, feature,activaiton=d_activation)
         self.generator.apply(self.weights_init)
         self.discriminator.apply(self.weights_init)
         self.zviz = Zviz({'G': self.generator, 'D': self.discriminator})

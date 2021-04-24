@@ -4,6 +4,7 @@ torch.manual_seed(999)
 import json
 import pickle as pkl
 import torch.nn.functional as F
+import torch.nn as nn
 import utils.util as U
 import torchvision
 from torchvision.utils import save_image
@@ -52,6 +53,8 @@ if __name__ == '__main__':
     parser.add_argument('--cpu', default=False, action='store_true')
     parser.add_argument('--datasetpath', default='../data')
     parser.add_argument('--debug',default=False,action='store_true')
+    parser.add_argument('--g_activation',default='relu')
+    parser.add_argument('--d_activation',default='relu')
     # parser.add_argument('--fakestatsper',default=10,type=int)
     args = parser.parse_args()
     epoch = args.epoch
@@ -72,6 +75,16 @@ if __name__ == '__main__':
     #     writer = chk['writer']
     #     args = chk['args']
     #     realsigma, realmu = chk['realstats']
+    if args.g_activation=='relu':
+        g_activation=nn.ReLU(inplace=True)
+    elif args.g_activation=='hswish':
+        g_activation=nn.Hardswish(inplace=True)
+
+    if args.d_activation=='relu':
+        d_activation=nn.ReLU(inplace=True)
+    elif args.d_activation=='hswish':
+        d_activation=nn.Hardswish(inplace=True)
+
     if args.loss == 'hinge':
         lossDreal =lambda x:F.relu(-x + 1).mean()
         lossDfake =lambda x: F.relu(x + 1).mean()
@@ -92,7 +105,7 @@ if __name__ == '__main__':
         optimizer = torch.optim.Adam
     if args.model == 'dcgan':
         model = DCGAN(optimizerG=optimizer, optimizerD=optimizer, lossDreal=lossDreal, lossDfake=lossDfake,
-                      lossG=lossG, zsize=args.zsize, feature=args.feature)
+                      lossG=lossG, zsize=args.zsize, feature=args.feature,d_activation=d_activation,g_activation=g_activation)
 
     # if args.checkpoint:
     #     model.load_state_dict(modelparam)
