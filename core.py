@@ -56,4 +56,4 @@ def send_line_notify(imagepath,notification_message='training_result'):
         files = {'imageFile': open(imagepath,'rb')}
         requests.post(line_notify_api,data=data, headers = headers, files = files)
     except:
-        requests.post(line_notify_api, data={'message:ERROR on sending'}, headers=headers)
+        requests.post(line_notify_api, data={'message':'ERROR on sending'}, headers=headers)
