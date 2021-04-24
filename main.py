@@ -31,7 +31,7 @@ def operate():
     # IS=cal_is(realimg)
     Co.addvalue(writer, 'acc:fid', fid, e)
     # Co.addvalue(writer,'IS',IS,e)
-    print(f'{fid=:.2f}')
+    print(f'fid:{fid:.2f}')
     Co.send_line_notify(f'{savefolder}/graphs.png',f'dcgan:{args.__dict__},{e}')
 
 
