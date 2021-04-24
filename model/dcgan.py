@@ -71,7 +71,7 @@ class DCGAN(nn.Module):
         self.discriminator = Discriminator(3, feature,activaiton=d_activation)
         self.generator.apply(self.weights_init)
         self.discriminator.apply(self.weights_init)
-        self.zviz = Zviz({'G': self.generator, 'D': self.discriminator})
+        self.zviz = Zviz({'G': self.generator, 'D': self.discriminator} if enable_zviz else {})
         self.optG = optimizerG(self.generator.parameters(), lr=0.0002, betas=(0.5, 0.999))
         self.optD = optimizerD(self.discriminator.parameters(), lr=0.0002, betas=(0.5, 0.999))
         self.zviz.setoptimizer(self.optG, 'optG')
