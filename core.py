@@ -53,4 +53,7 @@ def send_line_notify(imagepath,notification_message='training_result'):
     headers = {'Authorization': f'Bearer {line_notify_token}'}
     files = {'imageFile': open(imagepath,'rb')}
     data={'message':notification_message}
-    requests.post(line_notify_api,data=data, headers = headers, files = files)
+    try:
+        requests.post(line_notify_api,data=data, headers = headers, files = files)
+    except:
+        requests.post(line_notify_api, data={'message:ERROR on sending'}, headers=headers)
