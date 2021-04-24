@@ -76,33 +76,33 @@ if __name__ == '__main__':
         writer = chk['writer']
         args = chk['args']
         realsigma, realmu = chk['realstats']
-    # if args.g_activation=='relu':
-    #     g_activation=nn.ReLU(inplace=True)
-    # elif args.g_activation=='hswish':
-    #     g_activation=nn.Hardswish(inplace=True)
-    #
-    # if args.d_activation=='relu':
-    #     d_activation=nn.ReLU(inplace=True)
-    # elif args.d_activation=='hswish':
-    #     d_activation=nn.Hardswish(inplace=True)
-    #
-    # if args.loss == 'hinge':
-    #     lossDreal =lambda x:F.relu(-x + 1).mean()
-    #     lossDfake =lambda x: F.relu(x + 1).mean()
-    #     lossG =lambda x:(-x).mean()
-    # elif args.loss == 'bce':
-    #     lossDreal =lambda x:F.binary_cross_entropy_with_logits(x.reshape(-1), torch.ones(x.shape[0], device=x.device))
-    #     lossDfake =lambda x:F.binary_cross_entropy_with_logits(x.reshape(-1), torch.zeros(x.shape[0], device=x.device))
-    #     lossG =lambda x:F.binary_cross_entropy_with_logits(x.reshape(-1), torch.ones(x.shape[0], device=x.device))
-    # elif args.loss == 'mse':
-    #     lossDreal =lambda x:((x - 1) ** 2).mean()
-    #     lossDfake =lambda x: (x ** 2).mean()
-    #     lossG= lambda x:((x - 1) ** 2).mean()
-    # if args.optimizer == 'adam':
-    #     optimizer = torch.optim.Adam
-    # if args.model == 'dcgan':
-    #     model = DCGAN(optimizerG=optimizer, optimizerD=optimizer, lossDreal=lossDreal, lossDfake=lossDfake,
-    #                   lossG=lossG, zsize=args.zsize, feature=args.feature,d_activation=d_activation,g_activation=g_activation)
+    if args.g_activation=='relu':
+        g_activation=nn.ReLU(inplace=True)
+    elif args.g_activation=='hswish':
+        g_activation=nn.Hardswish(inplace=True)
+
+    if args.d_activation=='relu':
+        d_activation=nn.ReLU(inplace=True)
+    elif args.d_activation=='hswish':
+        d_activation=nn.Hardswish(inplace=True)
+
+    if args.loss == 'hinge':
+        lossDreal =lambda x:F.relu(-x + 1).mean()
+        lossDfake =lambda x: F.relu(x + 1).mean()
+        lossG =lambda x:(-x).mean()
+    elif args.loss == 'bce':
+        lossDreal =lambda x:F.binary_cross_entropy_with_logits(x.reshape(-1), torch.ones(x.shape[0], device=x.device))
+        lossDfake =lambda x:F.binary_cross_entropy_with_logits(x.reshape(-1), torch.zeros(x.shape[0], device=x.device))
+        lossG =lambda x:F.binary_cross_entropy_with_logits(x.reshape(-1), torch.ones(x.shape[0], device=x.device))
+    elif args.loss == 'mse':
+        lossDreal =lambda x:((x - 1) ** 2).mean()
+        lossDfake =lambda x: (x ** 2).mean()
+        lossG= lambda x:((x - 1) ** 2).mean()
+    if args.optimizer == 'adam':
+        optimizer = torch.optim.Adam
+    if args.model == 'dcgan':
+        model = DCGAN(optimizerG=optimizer, optimizerD=optimizer, lossDreal=lossDreal, lossDfake=lossDfake,
+                      lossG=lossG, zsize=args.zsize, feature=args.feature,d_activation=d_activation,g_activation=g_activation)
 
 
     if args.dataset == 'celeba':
