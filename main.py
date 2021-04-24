@@ -55,6 +55,7 @@ if __name__ == '__main__':
     parser.add_argument('--debug',default=False,action='store_true')
     parser.add_argument('--g_activation',default='relu')
     parser.add_argument('--d_activation',default='relu')
+    parser.add_argument('--disable_zviz',default=False,action='store_true')
     # parser.add_argument('--fakestatsper',default=10,type=int)
     args = parser.parse_args()
     epoch = args.epoch
@@ -102,7 +103,7 @@ if __name__ == '__main__':
         optimizer = torch.optim.Adam
     if args.model == 'dcgan':
         model = DCGAN(optimizerG=optimizer, optimizerD=optimizer, lossDreal=lossDreal, lossDfake=lossDfake,
-                      lossG=lossG, zsize=args.zsize, feature=args.feature,d_activation=d_activation,g_activation=g_activation)
+                      lossG=lossG, zsize=args.zsize, feature=args.feature,d_activation=d_activation,g_activation=g_activation,enable_zviz=not args.disable_zviz)
 
 
     if args.dataset == 'celeba':
