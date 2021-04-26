@@ -12,7 +12,7 @@ def addvalue(dict,key,value,epoch):
             dict[key].append([value])
         else:
             dict[key][epoch].append(value)
-def savedic(dict,fol,title=""):
+def savedic(dict,fol):
     n=1
     numgraph=len(set([i.split(':')[0] for i in dict]))
     axdic={}
@@ -32,7 +32,6 @@ def savedic(dict,fol,title=""):
     for key in axdic:
         axdic[key].legend()
     #fig.legend()
-    plt.title(title)
     # plt.ylim(0,1)
     fig.savefig(f'{fol}/graphs.png')
     plt.close()

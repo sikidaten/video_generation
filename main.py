@@ -19,13 +19,16 @@ def operate():
     for i, (noise, realimg) in enumerate(loader):
         lossDreal, lossDfake, lossG, fake = model.trainbatch(noise.to(device), realimg.to(device))
         fakemvci.iter(inception(fake.detach().to(device))[0])
-        print(f'{e}/{epoch}:{i}/{len(loader)}, Dreal:{lossDreal:.2f}, Dfake:{lossDfake:.2f}, G:{lossG:.2f}')
+        log=f'{e}/{epoch}:{i}/{len(loader)}, Dreal:{lossDreal:.2f}, Dfake:{lossDfake:.2f}, G:{lossG:.2f}'
+        with open(logpath,'a')as f:
+            f.write(log+'\n')
+        print(log)
         Co.addvalue(writer, 'loss:Dreal', lossDreal, e)
         Co.addvalue(writer, 'loss:Dfake', lossDfake, e)
         Co.addvalue(writer, 'loss:G', lossG, e)
-        if i % 1000 == 0:
-            save_image(((fake * 0.5) + 0.5), f'{savefolder}/{e}_{i}.png')
-            Co.send_line_notify(f'{savefolder}/{e}_{i}.png', f'dcgan:{args.__dict__},{e}_{i}')
+
+        save_image(((fake * 0.5) + 0.5), f'{savefolder}/{e}_{i}.png')
+    Co.send_line_notify(f'{savefolder}/{e}.png', f'dcgan:{args.__dict__},{e}')
     # get FID
     fid = U.fid(realsigma, realmu, *fakemvci.get(isbias=True))
     # IS=cal_is(realimg)
@@ -68,7 +71,7 @@ if __name__ == '__main__':
 
     writer = {}
     e = 0
-
+    logpath=f'{savefolder}/log.txt'
     if args.checkpoint:
         chk = U.loadcloudpickle(args.checkpoint)
         model = chk['model']
@@ -77,6 +80,9 @@ if __name__ == '__main__':
         writer = chk['writer']
         args = chk['args']
         realsigma, realmu = chk['realstats']
+    else:
+        if os.path.exists(logpath):
+            os.remove(logpath)
     if args.g_activation=='relu':
         g_activation=nn.ReLU(inplace=True)
     elif args.g_activation=='hswish':
@@ -138,7 +144,7 @@ if __name__ == '__main__':
             'writer': writer,
             'args': args,
             'realstats': (realsigma, realmu),
-        }, savefolder + '/chk.pth')
+        }, savefolder +f'/chk_{e}.pth')
         model.to(device)
-        Co.savedic(writer, savefolder, "")
+        Co.savedic(writer, savefolder)
         Co.send_line_notify(f'{savefolder}/graphs.png', f'dcgan:{args.__dict__},{e}')
