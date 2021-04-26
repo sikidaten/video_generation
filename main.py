@@ -8,6 +8,8 @@ import torch.nn as nn
 import utils.util as U
 import torchvision
 from torchvision.utils import save_image
+from torchvision.models import resnet18
+from model.wrap import Wrap
 from model.dcgan import DCGAN
 import core as Co
 from dataset import CelebADataset
@@ -59,6 +61,7 @@ if __name__ == '__main__':
     parser.add_argument('--g_activation',default='relu')
     parser.add_argument('--d_activation',default='relu')
     parser.add_argument('--disable_zviz',default=False,action='store_true')
+    parser.add_argument('--discriminator',default=None)
     # parser.add_argument('--fakestatsper',default=10,type=int)
     args = parser.parse_args()
     epoch = args.epoch
@@ -107,9 +110,13 @@ if __name__ == '__main__':
         lossG= lambda x:((x - 1) ** 2).mean()
     if args.optimizer == 'adam':
         optimizer = torch.optim.Adam
+    if args.discriminator is None:
+        discriminator=args.discriminator
+    elif args.discriminator=='resnet18':
+        discriminator=Wrap(resnet18())
     if args.model == 'dcgan':
         model = DCGAN(optimizerG=optimizer, optimizerD=optimizer, lossDreal=lossDreal, lossDfake=lossDfake,
-                      lossG=lossG, zsize=args.zsize, feature=args.feature,d_activation=d_activation,g_activation=g_activation,enable_zviz=not args.disable_zviz)
+                      lossG=lossG, zsize=args.zsize, feature=args.feature,d_activation=d_activation,g_activation=g_activation,enable_zviz=not args.disable_zviz,discriminator=discriminator)
 
 
     if args.dataset == 'celeba':

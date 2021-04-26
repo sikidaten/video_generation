@@ -65,10 +65,10 @@ from zviz import Zviz
 
 
 class DCGAN(nn.Module):
-    def __init__(self, optimizerG, optimizerD, lossDreal, lossDfake, lossG, zsize, feature,g_activation=nn.ReLU(inplace=True),d_activation=nn.LeakyReLU(0.2,inplace=True),enable_zviz=True):
+    def __init__(self, optimizerG, optimizerD, lossDreal, lossDfake, lossG, zsize, feature,g_activation=nn.ReLU(inplace=True),d_activation=nn.LeakyReLU(0.2,inplace=True),enable_zviz=True,discriminator=None):
         super(DCGAN, self).__init__()
         self.generator = Generator(zsize, feature, 3,acivation=g_activation)
-        self.discriminator = Discriminator(3, feature,activaiton=d_activation)
+        self.discriminator = discriminator if discriminator else Discriminator(3, feature,activaiton=d_activation)
         self.generator.apply(self.weights_init)
         self.discriminator.apply(self.weights_init)
         self.zviz = Zviz({'G': self.generator, 'D': self.discriminator} if enable_zviz else {})
