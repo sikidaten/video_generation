@@ -27,8 +27,8 @@ def operate():
         Co.addvalue(writer, 'loss:Dfake', lossDfake, e)
         Co.addvalue(writer, 'loss:G', lossG, e)
 
-        save_image(((fake * 0.5) + 0.5), f'{savefolder}/{e}_{i}.png')
-    Co.send_line_notify(f'{savefolder}/{e}_{i}.png', f'dcgan:{args.__dict__},{e}')
+        save_image(((model.generator(testinput) * 0.5) + 0.5), f'{savefolder}/{e}_{i}.png')
+    Co.send_line_notify(f'{savefolder}/{e}_0.png', f'dcgan:{args.__dict__},{e}')
     # get FID
     fid = U.fid(realsigma, realmu, *fakemvci.get(isbias=True))
     # IS=cal_is(realimg)
@@ -135,6 +135,7 @@ if __name__ == '__main__':
         model.discriminator = torch.nn.DataParallel(model.discriminator).to(device)
         model.generator = torch.nn.DataParallel(model.generator).to(device)
         # M=model.module
+    testinput=torch.randn(args.batchsize,args.zsize,1,1)
     for e in range(e, epoch):
         operate()
 
