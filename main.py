@@ -28,7 +28,7 @@ def operate():
         Co.addvalue(writer, 'loss:G', lossG, e)
 
         save_image(((fake * 0.5) + 0.5), f'{savefolder}/{e}_{i}.png')
-    Co.send_line_notify(f'{savefolder}/{e}.png', f'dcgan:{args.__dict__},{e}')
+    Co.send_line_notify(f'{savefolder}/{e}_{i}.png', f'dcgan:{args.__dict__},{e}')
     # get FID
     fid = U.fid(realsigma, realmu, *fakemvci.get(isbias=True))
     # IS=cal_is(realimg)
