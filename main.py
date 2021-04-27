@@ -152,7 +152,7 @@ if __name__ == '__main__':
             'writer': writer,
             'args': args,
             'realstats': (realsigma, realmu),
-        }, savefolder +f'/chk_{e}.pth')
+        }, savefolder +f'/chk.pth')
         model.to(device)
         Co.savedic(writer, savefolder)
         Co.send_line_notify(f'{savefolder}/graphs.png', f'dcgan:{args.__dict__},{e}')
