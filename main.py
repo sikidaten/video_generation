@@ -114,7 +114,7 @@ if __name__ == '__main__':
         if args.discriminator is None:
             discriminator=args.discriminator
         elif args.discriminator=='resnet18':
-            discriminator=Wrap(resnet18(activation=d_activation))
+            discriminator=resnet18(activation=d_activation,num_classes=1)
         if args.model == 'dcgan':
             model = DCGAN(optimizerG=optimizer, optimizerD=optimizer, lossDreal=lossDreal, lossDfake=lossDfake,
                           lossG=lossG, zsize=args.zsize, feature=args.feature,d_activation=d_activation,g_activation=g_activation,enable_zviz=not args.disable_zviz,discriminator=discriminator)
