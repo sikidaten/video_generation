@@ -14,11 +14,14 @@ from model.dcgan import DCGAN
 import core as Co
 from dataset import CelebADataset
 import os
+from utils.tfrecord import TFRDataloader
 
 
 def operate():
     fakemvci = U.MeanCoVariance_iter(device)
-    for i, (noise, realimg) in enumerate(loader):
+    for i, realimg in enumerate(loader):
+        B,C,H,W=realimg.shape
+        noise=torch.randn(B,args.zsize,1,1)
         lossDreal, lossDfake, lossG, fake = model.trainbatch(noise.to(device), realimg.to(device))
         fakemvci.iter(inception(fake.detach().to(device))[0])
         log=f'{e}/{epoch}:{i}/{len(loader)}, Dreal:{lossDreal:.2f}, Dfake:{lossDfake:.2f}, G:{lossG:.2f}'
@@ -121,9 +124,10 @@ if __name__ == '__main__':
 
 
         if args.dataset == 'celeba':
-            loader = torch.utils.data.DataLoader(
-                CelebADataset(torchvision.datasets.CelebA(args.datasetpath, 'all', download=True), args.size, args.zsize,debug=args.debug),
-                batch_size=args.batchsize, num_workers=4, shuffle=True)
+            # loader = torch.utils.data.DataLoader(
+            #     CelebADataset(torchvision.datasets.CelebA(args.datasetpath, 'all', download=True), args.size, args.zsize,debug=args.debug),
+            #     batch_size=args.batchsize, num_workers=4, shuffle=True)
+            loader=TFRDataloader(path=args.datasetpath+'/celeba.tfrecord',epoch=1,batch=args.batchsize,size=args.size)
         realstatspath = f'__{args.dataset}_real.pkl'
         if os.path.exists(realstatspath):
             print('load real stats')
