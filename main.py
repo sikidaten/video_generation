@@ -120,7 +120,7 @@ if __name__ == '__main__':
             discriminator=resnet18(activation=d_activation,num_classes=1)
         if args.model == 'dcgan':
             model = DCGAN(optimizerG=optimizer, optimizerD=optimizer, lossDreal=lossDreal, lossDfake=lossDfake,
-                          lossG=lossG, zsize=args.zsize, feature=args.feature,d_activation=d_activation,g_activation=g_activation,enable_zviz=not args.disable_zviz,discriminator=discriminator)
+                          lossG=lossG, zsize=args.zsize, feature=args.feature,d_activation=d_activation,g_activation=g_activation,enable_zviz=not args.disable_zviz,discriminator=discriminator,size=args.size)
 
 
         if args.dataset == 'celeba':
