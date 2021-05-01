@@ -20,6 +20,7 @@ class TFRDataloader():
         return image
 
     def __init__(self, path,epoch,batch,size=None):
+        self.path=path
         self.size=size
         self.batch=batch
         self.epoch=epoch
@@ -30,7 +31,7 @@ class TFRDataloader():
             .batch(batch)\
             .as_numpy_iterator()
     def init(self):
-        self.__init__(path,epoch=self.epoch,batch=self.batch,size=self.size)
+        self.__init__(self.path,epoch=self.epoch,batch=self.batch,size=self.size)
 
     def __iter__(self):
         return self
