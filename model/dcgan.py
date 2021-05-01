@@ -22,9 +22,7 @@ class BaseModel(nn.Module):
         self.lastactivation = lastactivation
 
     def forward(self, x):
-        # x=self.inconv(x)
         x = self.convs(x)
-        # x=self.outconv(x)
         x = self.lastactivation(x)
         return x
 

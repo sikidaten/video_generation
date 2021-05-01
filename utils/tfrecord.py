@@ -22,12 +22,15 @@ class TFRDataloader():
     def __init__(self, path,epoch,batch,size=None):
         self.size=size
         self.batch=batch
+        self.epoch=epoch
         self.tfdataset = tf.data.TFRecordDataset(path)\
             .map(self._parse_image_function)\
             .repeat(epoch)\
             .prefetch(5)\
             .batch(batch)\
             .as_numpy_iterator()
+    def init(self):
+        self.__init__(path,epoch=self.epoch,batch=self.batch,size=self.size)
 
     def __iter__(self):
         return self

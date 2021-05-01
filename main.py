@@ -150,7 +150,7 @@ if __name__ == '__main__':
         testinput=torch.randn(args.batchsize,args.zsize,1,1)
         for e in range(e, epoch):
             operate()
-
+            loader.init()
             U.savecloudpickle({
                 'model': model.to('cpu'),
                 'e': e,
