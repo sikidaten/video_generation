@@ -6,7 +6,9 @@ from scipy import linalg
 def min(x, a):
     return torch.stack([torch.zeros_like(x) + a, x]).min(0)[0]
 
-
+def linerinterpolateroundlog2(mi,ma,n):
+    ret=2**(np.round(np.log2((ma-mi)/(n-1)*np.arange(n)+mi))).astype(int)
+    return np.where(ret<mi,mi,ret)
 def max(x, a):
     return torch.stack([torch.zeros_like(x) + a, x]).max(0)[0]
 import cloudpickle
@@ -98,4 +100,4 @@ def fid(cogtsigma, gtmean, cofakesigma, fakemean):
 
 
 if __name__ == '__main__':
-    print(max(torch.tensor([-1, 0, 1, 2]), 0))
+    print(linerinterpolateroundlog2(64,512,3))

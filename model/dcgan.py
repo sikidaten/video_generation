@@ -2,27 +2,27 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+import utils.util as U
 from model.common import InterpolateConv
 
 
 class BaseModel(nn.Module):
-    def __init__(self, in_ch, out_ch, feature, size, scale_factor, lastactivation, activation,lastconv=False):
+    def __init__(self, in_ch, out_ch, feature, size, scale_factor, lastactivation, activation, is_G=False):
         super(BaseModel, self).__init__()
-        # self.inconv = nn.Conv2d(in_ch,feature,1)
-        # self.convs = nn.Sequential(*[InterpolateConv(feature, scale_factor, activate=activation) for _ in range(int(np.log2(size) - 2))])
-        # self.convs=nn.Sequential(InterpolateConv(in_ch))
-        # self.outconv = nn.Conv2d(feature, out_ch, 3, padding=1)
-        # self.convs=nn.Sequential(*[InterpolateConv(feature,scale_factor,activate=activation) for _ in range(int(np.log2(size)))])
+        numrange = int(np.log2(size))
+        features = U.linerinterpolateroundlog2(feature, 512, numrange+1)
+        if is_G: features = features[::-1]
+        self.inconv = nn.Conv2d(in_ch, features[0], 1)
         self.convs = nn.Sequential(
-            InterpolateConv(feature, scale_factor, activate=activation, in_ch=in_ch,normalize=nn.Identity()),
-            *[InterpolateConv(feature, scale_factor, activate=activation,normalize=nn.Identity()) for _ in range(int(np.log2(size)) - 2)],
-            InterpolateConv(feature, scale_factor, activate=activation, out_ch=feature if lastconv else out_ch,normalize=nn.Identity() if lastconv else None),
-            nn.Conv2d(feature,out_ch,3,padding=1) if lastconv else nn.Identity()
-        )
+            *[InterpolateConv(in_ch=features[i], out_ch=features[i + 1], scale_factor=scale_factor, activate=activation,snnorm=True)
+              for i in range(numrange)])
+        self.outconv = nn.Conv2d(features[-1], out_ch, 3, padding=1)
         self.lastactivation = lastactivation
 
     def forward(self, x):
+        x = self.inconv(x)
         x = self.convs(x)
+        x = self.outconv(x)
         x = self.lastactivation(x)
         return x
 
@@ -78,16 +78,19 @@ from zviz import Zviz
 
 
 class DCGAN(nn.Module):
-    def __init__(self, optimizerG, optimizerD, lossDreal, lossDfake, lossG, zsize, feature,size,
+    def __init__(self, optimizerG, optimizerD, lossDreal, lossDfake, lossG, zsize, feature, size,
                  g_activation=nn.ReLU(inplace=True), d_activation=nn.LeakyReLU(0.2, inplace=True), enable_zviz=True,
                  discriminator=None):
         super(DCGAN, self).__init__()
-        # self.generator = Generator(zsize, feature, 3, activation=g_activation)
-        # self.discriminator = discriminator if discriminator else Discriminator(3, feature, activation=d_activation,size=size)
-        self.generator = BaseModel(in_ch=zsize, out_ch=3, feature=feature, scale_factor=2, size=size, lastactivation=nn.Tanh(),activation=g_activation)
-        self.discriminator = BaseModel(in_ch=3, out_ch=1, feature=feature, size=size, scale_factor=0.5,lastactivation=nn.Identity(),activation=d_activation,lastconv=True) if discriminator is None else discriminator
-        self.generator.apply(self.weights_init)
-        self.discriminator.apply(self.weights_init)
+        self.generator = Generator(zsize, feature, 3, activation=g_activation)
+        self.discriminator = discriminator if discriminator else Discriminator(3, feature, activation=d_activation,size=size)
+        # self.generator = BaseModel(in_ch=zsize, out_ch=3, feature=feature, scale_factor=2, size=size,
+        #                            lastactivation=nn.Tanh(), activation=g_activation,is_G=True)
+        self.discriminator = BaseModel(in_ch=3, out_ch=1, feature=feature, size=size, scale_factor=0.5,
+                                       lastactivation=nn.Identity(), activation=d_activation,
+                                       is_G=False) if discriminator is None else discriminator
+        # self.generator.apply(self.weights_init)
+        # self.discriminator.apply(self.weights_init)
         self.zviz = Zviz({'G': self.generator, 'D': self.discriminator} if enable_zviz else {})
         self.optG = optimizerG(self.generator.parameters(), lr=0.0002, betas=(0.5, 0.999))
         self.optD = optimizerD(self.discriminator.parameters(), lr=0.0002, betas=(0.5, 0.999))
@@ -125,7 +128,7 @@ class DCGAN(nn.Module):
         fakeout = self.discriminator(fake)
         lossG = self.lossG(fakeout).mean()
         self.zviz.backward(lossG)
-        self.zviz.step('optG')
+        if lossDfake<1e-3:self.zviz.step('optG')
         self.zviz.zero_grad('optG')
         self.zviz.zero_grad('optD')
         self.zviz.clear()
@@ -135,8 +138,13 @@ class DCGAN(nn.Module):
 
 if __name__ == '__main__':
     size = 128
-    generator = BaseModel(in_ch=128, out_ch=3, feature=128, scale_factor=2, size=size, lastactivation=nn.Tanh(),activation=nn.ReLU())
-    discriminator = BaseModel(in_ch=3, out_ch=1, feature=128, size=size, scale_factor=0.5, lastactivation=nn.Identity(),activation=nn.ReLU(),lastconv=True)
+    generator = BaseModel(in_ch=128, out_ch=3, feature=128, scale_factor=2, size=size, lastactivation=nn.Tanh(),
+                          activation=nn.ReLU())
+    discriminator = BaseModel(in_ch=3, out_ch=1, feature=128, size=size, scale_factor=0.5, lastactivation=nn.Identity(),
+                              activation=nn.ReLU(),
+                              is_G=False,)
+    # print(generator)
     # output = generator(torch.randn(1, 128, 1, 1))
+    print(discriminator)
     output = discriminator(torch.randn(8, 3, size, size))
     print(output.shape)
