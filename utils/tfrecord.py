@@ -34,6 +34,7 @@ class TFRDataloader():
         self.m = m
         self.s = s
 
+
     def __iter__(self):
         return self
 
