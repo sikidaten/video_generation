@@ -67,7 +67,7 @@ if __name__ == '__main__':
         parser.add_argument('--debug', default=False, action='store_true')
         parser.add_argument('--g_activation', default='hswish')
         parser.add_argument('--d_activation', default='hswish')
-        parser.add_argument('--disable_zviz', default=False, action='store_true')
+        parser.add_argument('--disable_zviz', default=True, action='store_true')
         parser.add_argument('--discriminator', default=None)
         # parser.add_argument('--fakestatsper',default=10,type=int)
         args = parser.parse_args()
