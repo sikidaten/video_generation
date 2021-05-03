@@ -29,7 +29,7 @@ def operate():
         generatedimages = (model.generator(testinput) * 0.5) + 0.5
         writer.add_images('images', generatedimages, i)
         save_image(generatedimages, f'{savefolder}/{i}.png')
-        if i % 2000 == 0:
+        if i % 2000 == 0 and i!=0:
             # get FID
             fid = U.fid(realsigma, realmu, *fakemvci.get(isbias=True))
             # IS=cal_is(realimg)

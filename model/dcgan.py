@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 
 import utils.util as U
-from model.common import InterpolateConv
+from model.common import InterpolateConv,InterpolateConvcnn
 
 
 class BaseModel(nn.Module):
@@ -14,7 +14,7 @@ class BaseModel(nn.Module):
         if is_G: features = features[::-1]
         self.inconv = nn.Conv2d(in_ch, features[0], 1)
         self.convs = nn.Sequential(
-            *[InterpolateConv(in_ch=features[i], out_ch=features[i + 1], scale_factor=scale_factor, activate=activation,snnorm=True)
+            *[InterpolateConvcnn(in_ch=features[i], out_ch=features[i + 1], scale_factor=scale_factor, activate=activation,snnorm=True)
               for i in range(numrange)])
         self.outconv = nn.Conv2d(features[-1], out_ch, 3, padding=1)
         self.lastactivation = lastactivation
@@ -92,8 +92,11 @@ class DCGAN(nn.Module):
         # self.generator.apply(self.weights_init)
         # self.discriminator.apply(self.weights_init)
         self.zviz = Zviz({'G': self.generator, 'D': self.discriminator} if enable_zviz else {})
-        self.optG = optimizerG(self.generator.parameters(), lr=0.0002, betas=(0.5, 0.999))
-        self.optD = optimizerD(self.discriminator.parameters(), lr=0.0002, betas=(0.5, 0.999))
+        # self.optG = optimizerG(self.generator.parameters(), lr=0.0002, betas=(0.5, 0.999))
+        # self.optD = optimizerD(self.discriminator.parameters(), lr=0.0002, betas=(0.5, 0.999))
+
+        self.optG = optimizerG(self.generator.parameters())
+        self.optD = optimizerD(self.discriminator.parameters())
         self.zviz.setoptimizer(self.optG, 'optG')
         self.zviz.setoptimizer(self.optD, 'optD')
         self.lossDreal = lossDreal
@@ -128,7 +131,7 @@ class DCGAN(nn.Module):
         fakeout = self.discriminator(fake)
         lossG = self.lossG(fakeout).mean()
         self.zviz.backward(lossG)
-        if lossDfake<1e-3:self.zviz.step('optG')
+        if (lossDfake+lossDreal)<0.25:self.zviz.step('optG')
         self.zviz.zero_grad('optG')
         self.zviz.zero_grad('optD')
         self.zviz.clear()
