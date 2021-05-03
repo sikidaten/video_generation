@@ -22,15 +22,14 @@ class InterpolateConvcnn(nn.Module):
     def __init__(self, in_ch, out_ch, scale_factor, activate=nn.ReLU(inplace=True), batchnorm=True, snnorm=True):
         super(InterpolateConvcnn, self).__init__()
         if scale_factor==0.5:
-            conv = nn.Conv2d(in_ch, out_ch, 3, bias=(batchnorm != None), padding=1,stride=2)
+            conv = nn.Conv2d(in_ch, out_ch, 3, bias=not batchnorm, padding=1,stride=2)
         elif scale_factor==2:
-            conv=nn.ConvTranspose2d(in_ch,out_ch,2,bias=(batchnorm!=None),stride=2)
+            conv=nn.ConvTranspose2d(in_ch,out_ch,2,bias=not batchnorm,stride=2)
+        layers=[conv]
+        if batchnorm:layers.append(nn.BatchNorm2d(out_ch))
+        layers.append(activate)
         # if snnorm: conv = spectral_norm(conv)
-        self.main = nn.Sequential(
-            conv,
-            nn.BatchNorm2d(out_ch) if batchnorm else nn.Identity(),
-            activate
-        )
+        self.main = nn.Sequential(*layers)
 
     def forward(self, x):
         return self.main(x)
