@@ -12,7 +12,7 @@ from model.dcgan import DCGAN
 import os
 from utils.tfrecord import TFRDataloader
 from torch.utils.tensorboard import SummaryWriter
-
+from model.common import SQLinear
 
 def operate():
     fakemvci = U.MeanCoVariance_iter(device)
@@ -108,9 +108,9 @@ if __name__ == '__main__':
             lossG = lambda x: (-x).mean()
 
         elif args.loss == 'sqhinge':
-            lossDreal = lambda x: (F.relu(-x + 1)**2).mean()
-            lossDfake = lambda x: (F.relu(x + 1)**2).mean()
-            lossG = lambda x: (F.relu(-x+1)**2).mean()
+            lossDreal = lambda x: SQLinear()(F.relu(-x + 1)).mean()
+            lossDfake = lambda x: SQLinear()(F.relu(x + 1)).mean()
+            lossG = lambda x: SQLinear()(F.relu(-x+1)).mean()
         elif args.loss == 'bce':
             lossDreal = lambda x: F.binary_cross_entropy_with_logits(x.reshape(-1),
                                                                      torch.ones(x.shape[0], device=x.device))

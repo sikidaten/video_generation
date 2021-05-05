@@ -1,6 +1,32 @@
 import torch
 import torch.nn as nn
 from torch.nn.utils import spectral_norm
+class _sqlinear(torch.autograd.Function):
+    def __init__(self,cut=0,linear=1):
+        self.cut=cut
+        self.linear=linear
+    @staticmethod
+    def forward(self,x):
+        self.save_for_backward(x.clone())
+        x[x<0]=0
+        x[(0<x) & (x<1)]=x[(0<x) & (x<1)]**2
+        return x
+
+    @staticmethod
+    def backward(self,g):
+        x=self.saved_tensors[0]
+        x[x<0]=0
+        x[x>1]=1
+        x[(0<x) & (x<1)]*=2
+        g=g.clone()
+        return g*x
+class SQLinear(nn.Module):
+    def __init__(self,cut=0,linear=1):
+        super(SQLinear, self).__init__()
+        self.cut=cut
+        self.linear=linear
+    def forward(self,x):
+        return _sqlinear(cut=self.cut,linear=self.linear).apply(x)
 
 
 class InterpolateConv(nn.Module):
@@ -37,7 +63,11 @@ class InterpolateConvcnn(nn.Module):
         return self.main(x)
 
 if __name__ == '__main__':
-    model = InterpolateConvcnn(128,128, 2)
-    data = torch.randn(3, 128, 64, 64)
+    model=SQLinear()
+    data = torch.randn(4)*2
+    data.requires_grad=True
     output = model(data)
-    print(output.shape)
+    output.sum().backward()
+    print(data)
+    print(output)
+    print(data.grad)

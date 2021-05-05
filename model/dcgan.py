@@ -13,11 +13,17 @@ class BaseModel(nn.Module):
         numrange = int(np.log2(size))
         features = U.linerinterpolateroundlog2(feature, 512, numrange+1)
         if is_G: features = features[::-1]
-        self.inconv = nn.Conv2d(in_ch, features[0], 1)
+        # self.inconv = nn.Conv2d(in_ch, features[0], 1)
+        # self.convs = nn.Sequential(
+        #     *[InterpolateConvcnn(in_ch=features[i], out_ch=features[i + 1], scale_factor=scale_factor, activate=activation,snnorm=True,batchnorm=(i in [2,3,4]))
+        #       for i in range(numrange)])
+        # self.outconv = nn.Conv2d(features[-1], out_ch, 3, padding=1)
+        self.inconv = nn.Conv2d(in_ch, feature, 1)
         self.convs = nn.Sequential(
-            *[InterpolateConvcnn(in_ch=features[i], out_ch=features[i + 1], scale_factor=scale_factor, activate=activation,snnorm=True,batchnorm=(i in [2,3,4]))
+            *[InterpolateConvcnn(in_ch=feature, out_ch=feature, scale_factor=scale_factor,
+                                 activate=activation, snnorm=True, batchnorm=(i in [2, 3, 4]))
               for i in range(numrange)])
-        self.outconv = nn.Conv2d(features[-1], out_ch, 3, padding=1)
+        self.outconv = nn.Conv2d(feature, out_ch, 3, padding=1)
         self.inconv=spectral_norm(self.inconv)
         self.outconv=spectral_norm(self.outconv)
         self.lastactivation = lastactivation
@@ -95,13 +101,13 @@ class DCGAN(nn.Module):
         # self.generator.apply(self.weights_init)
         # self.discriminator.apply(self.weights_init)
         self.zviz = Zviz({'G': self.generator, 'D': self.discriminator} if enable_zviz else {})
-        self.optG = optimizerG(self.generator.parameters(), lr=0.0002, betas=(0.5, 0.999))
-        self.optD = optimizerD(self.discriminator.parameters(), lr=0.0002, betas=(0.5, 0.999))
+        self.optG = optimizerG(self.generator.parameters(), lr=0.00005, betas=(0, 0.999))
+        self.optD = optimizerD(self.discriminator.parameters(), lr=0.0002, betas=(0, 0.999))
 
         # print(self.discriminator)
         # exit()
-        # self.optG = optimizerG(self.generator.parameters())
-        # self.optD = optimizerD(self.discriminator.parameters())
+        # self.optG = optimizerG(self.generator.parameters(),lr=1e-5)
+        # self.optD = optimizerD(self.discriminator.parameters(),lr=1e-4)
         self.zviz.setoptimizer(self.optG, 'optG')
         self.zviz.setoptimizer(self.optD, 'optD')
         self.lossDreal = lossDreal
