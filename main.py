@@ -29,7 +29,7 @@ def operate():
         generatedimages = (model.generator(testinput) * 0.5) + 0.5
         writer.add_images('images', generatedimages, i)
         save_image(generatedimages, f'{savefolder}/{i}.png')
-        if i % 2000 == 0 and i!=0:
+        if i % 1000 == 0 and i!=0:
             # get FID
             fid = U.fid(realsigma, realmu, *fakemvci.get(isbias=True))
             # IS=cal_is(realimg)
@@ -106,6 +106,11 @@ if __name__ == '__main__':
             lossDreal = lambda x: F.relu(-x + 1).mean()
             lossDfake = lambda x: F.relu(x + 1).mean()
             lossG = lambda x: (-x).mean()
+
+        elif args.loss == 'squaredhinge':
+            lossDreal = lambda x: (F.relu(-x + 1)**2).mean()
+            lossDfake = lambda x: (F.relu(x + 1)**2).mean()
+            lossG = lambda x: (-x).mean()
         elif args.loss == 'bce':
             lossDreal = lambda x: F.binary_cross_entropy_with_logits(x.reshape(-1),
                                                                      torch.ones(x.shape[0], device=x.device))
@@ -116,6 +121,10 @@ if __name__ == '__main__':
             lossDreal = lambda x: ((x - 1) ** 2).mean()
             lossDfake = lambda x: (x ** 2).mean()
             lossG = lambda x: ((x - 1) ** 2).mean()
+        elif args.loss=='wgan':
+            lossDreal=lambda x:torch.sigmoid(x).mean()
+            lossDfake=lambda x:-torch.sigmoid(x).mean()
+            lossG=lambda x:torch.sigmoid(x).mean()
         if args.optimizer == 'adam':
             optimizer = torch.optim.Adam
         if args.discriminator is None:

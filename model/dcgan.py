@@ -4,6 +4,7 @@ import torch.nn as nn
 
 import utils.util as U
 from model.common import InterpolateConv,InterpolateConvcnn
+from torch.nn.utils import spectral_norm
 
 
 class BaseModel(nn.Module):
@@ -17,6 +18,8 @@ class BaseModel(nn.Module):
             *[InterpolateConvcnn(in_ch=features[i], out_ch=features[i + 1], scale_factor=scale_factor, activate=activation,snnorm=True,batchnorm=(i in [2,3,4]))
               for i in range(numrange)])
         self.outconv = nn.Conv2d(features[-1], out_ch, 3, padding=1)
+        self.inconv=spectral_norm(self.inconv)
+        self.outconv=spectral_norm(self.outconv)
         self.lastactivation = lastactivation
 
     def forward(self, x):
@@ -83,9 +86,9 @@ class DCGAN(nn.Module):
                  discriminator=None):
         super(DCGAN, self).__init__()
         self.generator = Generator(zsize, feature, 3, activation=g_activation)
-        self.discriminator = discriminator if discriminator else Discriminator(3, feature, activation=d_activation,size=size)
-        # self.generator = BaseModel(in_ch=zsize, out_ch=3, feature=feature, scale_factor=2, size=size,
-        #                            lastactivation=nn.Tanh(), activation=g_activation,is_G=True)
+        # self.discriminator = discriminator if discriminator else Discriminator(3, feature, activation=d_activation,size=size)
+        self.generator = BaseModel(in_ch=zsize, out_ch=3, feature=feature, scale_factor=2, size=size,
+                                   lastactivation=nn.Tanh(), activation=g_activation,is_G=True)
         self.discriminator = BaseModel(in_ch=3, out_ch=1, feature=feature, size=size, scale_factor=0.5,
                                        lastactivation=nn.Identity(), activation=d_activation,
                                        is_G=False) if discriminator is None else discriminator
@@ -97,8 +100,8 @@ class DCGAN(nn.Module):
 
         # print(self.discriminator)
         # exit()
-        self.optG = optimizerG(self.generator.parameters())
-        self.optD = optimizerD(self.discriminator.parameters())
+        # self.optG = optimizerG(self.generator.parameters())
+        # self.optD = optimizerD(self.discriminator.parameters())
         self.zviz.setoptimizer(self.optG, 'optG')
         self.zviz.setoptimizer(self.optD, 'optD')
         self.lossDreal = lossDreal
@@ -142,14 +145,14 @@ class DCGAN(nn.Module):
 
 
 if __name__ == '__main__':
-    size = 128
+    size = 256
     generator = BaseModel(in_ch=128, out_ch=3, feature=128, scale_factor=2, size=size, lastactivation=nn.Tanh(),
                           activation=nn.ReLU())
     discriminator = BaseModel(in_ch=3, out_ch=1, feature=128, size=size, scale_factor=0.5, lastactivation=nn.Identity(),
                               activation=nn.ReLU(),
                               is_G=False,)
-    # print(generator)
-    # output = generator(torch.randn(1, 128, 1, 1))
-    print(discriminator)
-    output = discriminator(torch.randn(8, 3, size, size))
+    print(generator)
+    output = generator(torch.randn(1, 128, 1, 1))
+    # print(discriminator)
+    # output = discriminator(torch.randn(8, 3, size, size))
     print(output.shape)
