@@ -142,10 +142,7 @@ class DCGAN(nn.Module):
             lossDreal = torch.tensor([0.])
 
         fakeout = self.discriminator(fake)
-        rnd=torch.randperm(B)
-        msloss=self.mode_seek_lambda*F.l1_loss(noise,noise[rnd])/F.l1_loss(fake,fake[rnd])
-        print(f'msloss:{msloss:.2f}')
-        lossG = self.lossG(fakeout).mean()+msloss
+        lossG = self.lossG(fakeout).mean()
         self.zviz.backward(lossG)
         self.zviz.step('optG')
         self.zviz.zero_grad('optG')
