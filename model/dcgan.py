@@ -143,7 +143,8 @@ class DCGAN(nn.Module):
 
         fakeout = self.discriminator(fake)
         rnd=torch.randperm(B)
-        msloss=F.l1_loss(noise,noise[rnd])/F.l1_loss(fake,fake[rnd])
+        # msloss=F.l1_loss(noise,noise[rnd])/F.l1_loss(fake,fake[rnd]) not correct!!!
+        msloss=((noise - noise[rnd]).abs().reshape(B, -1).mean(-1) /(1e-5+ (fake - fake[rnd]).abs().reshape(B, -1).mean(-1))).mean()
         lossG = self.lossG(fakeout).mean()+self.mode_seek_lambda*msloss
         self.zviz.backward(lossG)
         self.zviz.step('optG')
