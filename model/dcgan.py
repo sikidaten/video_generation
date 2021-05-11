@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
-
+import torch.nn.functional as F
 import utils.util as U
 from model.common import InterpolateConv,InterpolateConvcnn
 from torch.nn.utils import spectral_norm
@@ -89,8 +89,9 @@ from zviz import Zviz
 class DCGAN(nn.Module):
     def __init__(self, optimizerG, optimizerD, lossDreal, lossDfake, lossG, zsize, feature, size,
                  g_activation=nn.ReLU(inplace=True), d_activation=nn.LeakyReLU(0.2, inplace=True), enable_zviz=True,
-                 discriminator=None):
+                 discriminator=None,mode_seek_lambda=1):
         super(DCGAN, self).__init__()
+        self.mode_seek_lambda=mode_seek_lambda
         self.generator = Generator(zsize, feature, 3, activation=g_activation)
         # self.discriminator = discriminator if discriminator else Discriminator(3, feature, activation=d_activation,size=size)
         self.generator = BaseModel(in_ch=zsize, out_ch=3, feature=feature, scale_factor=2, size=size,
@@ -125,6 +126,7 @@ class DCGAN(nn.Module):
 
     def trainbatch(self, noise, realimg, trainD=True):
         # self.zviz.clear()
+        B,C,H,W=realimg.shape
         fake = self.generator(noise)
         if trainD:
             realout = self.discriminator(realimg)
@@ -140,7 +142,10 @@ class DCGAN(nn.Module):
             lossDreal = torch.tensor([0.])
 
         fakeout = self.discriminator(fake)
-        lossG = self.lossG(fakeout).mean()
+        rnd=torch.randperm(B)
+        msloss=self.mode_seek_lambda*F.l1_loss(fake,fake[rnd])/F.l1_loss(noise,noise[rnd])
+        print(f'msloss:{msloss:.2f}')
+        lossG = self.lossG(fakeout).mean()+msloss
         self.zviz.backward(lossG)
         self.zviz.step('optG')
         self.zviz.zero_grad('optG')
@@ -148,6 +153,7 @@ class DCGAN(nn.Module):
         self.zviz.clear()
         self.zviz.disable_forever()
         return lossDreal.item(), lossDfake.item(), lossG.item(), fake.detach().cpu()
+        # return {'loss:Dreal':lossDreal.item(), 'loss:Dfake':lossDfake.item(), 'loss:G':lossG.item(), 'img:fake':fake.detach().cpu()}
 
 
 if __name__ == '__main__':
