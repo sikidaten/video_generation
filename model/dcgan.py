@@ -147,7 +147,7 @@ class DCGAN(nn.Module):
         self.zviz.zero_grad('optD')
         self.zviz.clear()
         self.zviz.disable_forever()
-        return lossDreal.item(), lossDfake.item(), lossG.item(), fake.detach().cpu()
+        return {'loss':{'Dreal':lossDreal.item(), 'Dfake':lossDfake.item(), 'G':lossG.item()}, 'image':{'fake':fake.detach().cpu()}}
 
 
 if __name__ == '__main__':

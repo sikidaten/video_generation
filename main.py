@@ -19,13 +19,14 @@ def operate():
     for i, realimg in enumerate(loader):
         B, C, H, W = realimg.shape
         noise = torch.randn(B, args.zsize, 1, 1)
-        lossDreal, lossDfake, lossG, fake = model.trainbatch(noise.to(device), realimg.to(device))
+        outstats = model.trainbatch(noise.to(device), realimg.to(device))
+        fake=outstats['image']['fake']
         fakemvci.iter(inception(fake.detach().to(device))[0])
-        log = f'{i}, Dreal:{lossDreal:.2f}, Dfake:{lossDfake:.2f}, G:{lossG:.2f}'
+        log = f'{i},{outstats["loss"]}'
         with open(logpath, 'a')as f:
             f.write(log + '\n')
         print(log)
-        writer.add_scalars('loss', {'Dreal': lossDreal, 'Dfake': lossDfake, 'G': lossG}, i)
+        writer.add_scalars('loss', outstats['loss'], i)
         generatedimages = (model.generator(testinput) * 0.5) + 0.5
         writer.add_images('images', generatedimages, i)
         save_image(generatedimages, f'{savefolder}/{i}.png')
