@@ -142,14 +142,16 @@ class DCGAN(nn.Module):
             lossDreal = torch.tensor([0.])
 
         fakeout = self.discriminator(fake)
-        lossG = self.lossG(fakeout).mean()
+        rnd=torch.randperm(B)
+        msloss=F.l1_loss(noise,noise[rnd])/F.l1_loss(fake,fake[rnd])
+        lossG = self.lossG(fakeout).mean()+self.mode_seek_lambda*msloss
         self.zviz.backward(lossG)
         self.zviz.step('optG')
         self.zviz.zero_grad('optG')
         self.zviz.zero_grad('optD')
         self.zviz.clear()
         self.zviz.disable_forever()
-        return {'loss':{'Dreal':lossDreal.item(), 'Dfake':lossDfake.item(), 'G':lossG.item()}, 'image':{'fake':fake.detach().cpu()}}
+        return {'loss':{'Dreal':round(lossDreal.item(),3), 'Dfake':round(lossDfake.item(),3), 'G':round(lossG.item(),3),'ms':round(msloss.item(),3)}, 'image':{'fake':fake.detach().cpu()}}
 
 
 if __name__ == '__main__':
