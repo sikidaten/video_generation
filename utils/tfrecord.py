@@ -47,9 +47,6 @@ class TFRDataloader():
 
 if __name__ == '__main__':
     # tfdataset=tf.data.TFRecordDataset(path).map(_parse_image_function).as_numpy_iterator()
-    path = '/home/hokusei/Downloads/celeba.tfrecord'
-    for i, x in enumerate(TFRDataloader(path=path, size=128, epoch=1, batch=128)):
-        print(i, x.shape)
-        x = x[0]
-        # ToPILImage()(x).show()
-        # exit()
+    path = '/home/hokusei/src/data/celeba.tfrecord'
+    for i, x in enumerate(TFRDataloader(path=path, size=128, epoch=1, batch=4096,s=1,m=0)):
+        print(x.permute(0,3,2,1).reshape(-1,3).mean(0))

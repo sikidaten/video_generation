@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 from scipy import linalg
+import torch.nn.functional as F
 
 
 def min(x, a):
@@ -97,7 +98,12 @@ def make_gt_inception(model, loader, device):
 def fid(cogtsigma, gtmean, cofakesigma, fakemean):
     return (torch.norm(gtmean - fakemean) ** 2 \
            + torch.trace(cogtsigma) + torch.trace(cofakesigma) - 2 * (torch.trace(sqrtm(cogtsigma @ cofakesigma)))).item()
-
-
+def rgb_distance(x):
+    return F.l1_loss(x.permute(0,3,2,1).reshape(-1,3).mean(0),torch.tensor([0.555,0.431,0.352])).item()
+def similarity(x):
+    B,C,H,W=x.shape
+    x0=x.reshape(B,1,C,H,W)
+    x1=x.reshape(1,B,C,H,W)
+    return F.l1_loss(x0,x1)
 if __name__ == '__main__':
     print(linerinterpolateroundlog2(64,512,3))

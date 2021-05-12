@@ -22,11 +22,13 @@ def operate():
         outstats = model.trainbatch(noise.to(device), realimg.to(device))
         fake=outstats['image']['fake']
         fakemvci.iter(inception(fake.detach().to(device))[0])
-        log = f'{i},{outstats["loss"]}'
+        stats={'similarity':U.similarity(fake),'rgb_distance':U.rgb_distance(fake)}
+        log = f'{i},{outstats["loss"],stats}'
         with open(logpath, 'a')as f:
             f.write(log + '\n')
         print(log)
         writer.add_scalars('loss', outstats['loss'], i)
+        writer.add_scalars('stats',stats,i)
         generatedimages = (model.generator(testinput) * 0.5) + 0.5
         writer.add_images('images', generatedimages, i)
         save_image(generatedimages, f'{savefolder}/{i}.jpg')
