@@ -13,6 +13,7 @@ import os
 from utils.tfrecord import TFRDataloader
 from torch.utils.tensorboard import SummaryWriter
 from model.common import SQLinear
+import shutil
 
 def operate():
     fakemvci = U.MeanCoVariance_iter(device)
@@ -81,7 +82,7 @@ if __name__ == '__main__':
         from gtmodel import InceptionV3
 
         inception = InceptionV3([3]).to(device)
-
+        shutil.rmtree(f'tfb/{args.savefolder}',ignore_errors=True)
         writer = SummaryWriter(log_dir=f'tfb/{args.savefolder}')
         e = 0
         logpath = f'{savefolder}/log.txt'
