@@ -29,7 +29,7 @@ def operate():
         writer.add_scalars('loss', outstats['loss'], i)
         generatedimages = (model.generator(testinput) * 0.5) + 0.5
         writer.add_images('images', generatedimages, i)
-        save_image(generatedimages, f'{savefolder}/{i}.png')
+        save_image(generatedimages, f'{savefolder}/{i}.jpg')
         if i % 1000 == 0 and i!=0:
             # get FID
             fid = U.fid(realsigma, realmu, *fakemvci.get(isbias=True))
