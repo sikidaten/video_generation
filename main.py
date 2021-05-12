@@ -68,8 +68,8 @@ if __name__ == '__main__':
         parser.add_argument('--cpu', default=False, action='store_true')
         parser.add_argument('--datasetpath', default='../data')
         parser.add_argument('--debug', default=False, action='store_true')
-        parser.add_argument('--g_activation', default='hswish')
-        parser.add_argument('--d_activation', default='hswish')
+        parser.add_argument('--g_activation', default='relu')
+        parser.add_argument('--d_activation', default='lrelu')
         parser.add_argument('--disable_zviz', default=True, action='store_true')
         parser.add_argument('--discriminator', default=None)
         # parser.add_argument('--fakestatsper',default=10,type=int)
@@ -104,6 +104,8 @@ if __name__ == '__main__':
             d_activation = nn.ReLU(inplace=True)
         elif args.d_activation == 'hswish':
             d_activation = nn.Hardswish(inplace=True)
+        elif args.d_activation=='lrelu':
+            d_activation=nn.LeakyReLU(0.2,inplace=True)
 
         if args.loss == 'hinge':
             lossDreal = lambda x: F.relu(-x + 1).mean()
