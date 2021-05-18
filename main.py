@@ -1,3 +1,5 @@
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import torch
 from torchvision.utils import save_image
 
@@ -9,7 +11,6 @@ import torch.nn as nn
 import utils.util as U
 from model.resnet import resnet18
 from model.dcgan import DCGAN
-import os
 from utils.tfrecord import TFRDataloader
 from torch.utils.tensorboard import SummaryWriter
 from model.common import SQLinear
