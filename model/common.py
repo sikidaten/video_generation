@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from torch.nn.utils import spectral_norm
+from utils.spectral_norm import spectral_norm
 class _sqlinear(torch.autograd.Function):
     def __init__(self,cut=0,linear=1):
         self.cut=cut
@@ -49,11 +49,13 @@ class InterpolateConvcnn(nn.Module):
         super(InterpolateConvcnn, self).__init__()
         if scale_factor==0.5:
             conv = nn.Conv2d(in_ch, out_ch, 3, bias=not batchnorm, padding=1,stride=2)
+            if snnorm: conv = spectral_norm(conv)
         elif scale_factor==2:
             # conv=nn.ConvTranspose2d(in_ch,out_ch,2,bias=not batchnorm,stride=2)
-            conv=nn.Sequential(nn.Upsample(scale_factor=2),nn.Conv2d(in_ch,out_ch,3,bias=not batchnorm,padding=1))
+            cnn=nn.Conv2d(in_ch,out_ch,3,bias=not batchnorm,padding=1)
+            if snnorm: cnn = spectral_norm(cnn)
+            conv=nn.Sequential(nn.Upsample(scale_factor=2),cnn)
 
-        # if snnorm: conv = spectral_norm(conv)
         layers=[conv]
         if batchnorm:layers.append(nn.BatchNorm2d(out_ch))
         layers.append(activate)

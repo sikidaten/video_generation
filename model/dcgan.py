@@ -4,11 +4,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 import utils.util as U
 from model.common import InterpolateConv,InterpolateConvcnn
-from torch.nn.utils import spectral_norm
+from utils.spectral_norm import spectral_norm
 
 
 class BaseModel(nn.Module):
-    def __init__(self, in_ch, out_ch, feature, size, scale_factor, lastactivation, activation, is_G=False):
+    def __init__(self, in_ch, out_ch, feature, size, scale_factor, lastactivation, activation, is_G=False,snnorm=False):
         super(BaseModel, self).__init__()
         numrange = int(np.log2(size))
         features = U.linerinterpolateroundlog2(feature, 512, numrange+1)
@@ -21,11 +21,11 @@ class BaseModel(nn.Module):
         self.inconv = nn.Conv2d(in_ch, feature, 1)
         self.convs = nn.Sequential(
             *[InterpolateConvcnn(in_ch=feature, out_ch=feature, scale_factor=scale_factor,
-                                 activate=activation, snnorm=True, batchnorm=(i in [2, 3, 4]))
+                                 activate=activation, snnorm=snnorm, batchnorm=(i in [2, 3, 4]))
               for i in range(numrange)])
         self.outconv = nn.Conv2d(feature, out_ch, 3, padding=1)
-        self.inconv=spectral_norm(self.inconv)
-        self.outconv=spectral_norm(self.outconv)
+        if snnorm:self.inconv=spectral_norm(self.inconv)
+        if snnorm:self.outconv=spectral_norm(self.outconv)
         self.lastactivation = lastactivation
 
     def forward(self, x):
@@ -37,22 +37,24 @@ class BaseModel(nn.Module):
 
 
 class Generator(nn.Module):
-    def __init__(self, in_ch, feature, size, out_ch=3, activation=nn.ReLU(), lastactivation=nn.Tanh()):
+    def __init__(self, in_ch, feature, size, out_ch=3, activation=nn.ReLU(), lastactivation=nn.Tanh(),snnorm=False):
         super(Generator, self).__init__()
+        conv0=nn.ConvTranspose2d(in_ch, feature * 8, 4, 1, 0, bias=False)
+        conv0=spectral_norm(conv0)
         self.main = nn.Sequential(
-            nn.ConvTranspose2d(in_ch, feature * 8, 4, 1, 0, bias=False),
+            conv0,
             nn.BatchNorm2d(feature * 8),
             activation,
-            nn.ConvTranspose2d(feature * 8, feature * 4, 4, 2, 1, bias=False),
+            spectral_norm(nn.ConvTranspose2d(feature * 8, feature * 4, 4, 2, 1, bias=False),enable=snnorm),
             nn.BatchNorm2d(feature * 4),
             activation,
-            nn.ConvTranspose2d(feature * 4, feature * 2, 4, 2, 1, bias=False),
+            spectral_norm(nn.ConvTranspose2d(feature * 4, feature * 2, 4, 2, 1, bias=False),enable=snnorm),
             nn.BatchNorm2d(feature * 2),
             activation,
-            nn.ConvTranspose2d(feature * 2, feature, 4, 2, 1, bias=False),
+            spectral_norm(nn.ConvTranspose2d(feature * 2, feature, 4, 2, 1, bias=False),enable=snnorm),
             nn.BatchNorm2d(feature),
             activation,
-            nn.ConvTranspose2d(feature, 3, 4, 2, 1, bias=False),
+            spectral_norm(nn.ConvTranspose2d(feature, 3, 4, 2, 1, bias=False),enable=snnorm),
             nn.Tanh()
         )
 
@@ -61,22 +63,22 @@ class Generator(nn.Module):
 
 
 class Discriminator(nn.Module):
-    def __init__(self, in_ch, feature, size, out_ch=1, activation=nn.LeakyReLU(0.2, inplace=True)):
+    def __init__(self, in_ch, feature, size, out_ch=1, activation=nn.LeakyReLU(0.2, inplace=True),snnorm=False):
         super(Discriminator, self).__init__()
 
         self.main = nn.Sequential(
-            nn.Conv2d(in_ch, feature, 4, 2, 1, bias=False),
+            spectral_norm(nn.Conv2d(in_ch, feature, 4, 2, 1, bias=False),enable=snnorm),
             activation,
-            nn.Conv2d(feature, feature * 2, 4, 2, 1, bias=False),
+            spectral_norm(nn.Conv2d(feature, feature * 2, 4, 2, 1, bias=False),enable=snnorm),
             nn.BatchNorm2d(feature * 2),
             activation,
-            nn.Conv2d(feature * 2, feature * 4, 4, 2, 1, bias=False),
+            spectral_norm(nn.Conv2d(feature * 2, feature * 4, 4, 2, 1, bias=False),enable=snnorm),
             nn.BatchNorm2d(feature * 4),
             activation,
-            nn.Conv2d(feature * 4, feature * 8, 4, 2, 1, bias=False),
+            spectral_norm(nn.Conv2d(feature * 4, feature * 8, 4, 2, 1, bias=False),enable=snnorm),
             nn.BatchNorm2d(feature * 8),
             activation,
-            nn.Conv2d(feature * 8, 1, 4, 1, 0, bias=False),
+            spectral_norm(nn.Conv2d(feature * 8, 1, 4, 1, 0, bias=False),enable=snnorm),
         )
 
     def forward(self, x):
@@ -105,7 +107,7 @@ class DCGAN(nn.Module):
         self.optG = optimizerG(self.generator.parameters(), lr=0.00005, betas=(0, 0.999))
         self.optD = optimizerD(self.discriminator.parameters(), lr=0.0002, betas=(0, 0.999))
 
-        # print(self.discriminator)
+        # print(self.generator)
         # exit()
         # self.optG = optimizerG(self.generator.parameters(),lr=1e-5)
         # self.optD = optimizerD(self.discriminator.parameters(),lr=1e-4)

@@ -105,5 +105,27 @@ def similarity(x):
     x0=x.reshape(B,1,C,H,W)
     x1=x.reshape(1,B,C,H,W)
     return F.l1_loss(x0,x1)
+def get_singular(module):
+    ret={}
+    for n,p in module.named_parameters():
+        if 'weight' in n:
+            _p=p
+            ret[n]=torch.svd(_p.reshape(_p.shape[0],-1))[1].max().item()
+    return ret
+def get_singular_with_SN(model):
+    ret={}
+    params=model.state_dict()
+    for key in params:
+        if 'weight_orig' in key:
+            _w=params[key]
+            _u=params[key.replace('orig','u')]
+            _v=params[key.replace('orig','v')]
+            if _w.shape[1]==_u.shape[0]:
+                _w=_w.permute(1,0,2,3)
+            _w = _w.reshape(_w.shape[0], -1)
+            ret[key]=_u@_w@_v
+    assert ret!={}
+    return ret
+
 if __name__ == '__main__':
     print(linerinterpolateroundlog2(64,512,3))
