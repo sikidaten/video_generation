@@ -58,6 +58,8 @@ def operate():
                 'realstats': (realsigma, realmu),
             }, savefolder + f'/chk.pth')
             model.to(device)
+        if i==args.endstep:
+            break
 
 
 if __name__ == '__main__':
@@ -70,7 +72,7 @@ if __name__ == '__main__':
         parser.add_argument('--dataset', default='celeba')
         parser.add_argument('--optimizer', default='adam')
         parser.add_argument('--zsize', type=int, default=128)
-        parser.add_argument('--epoch', default=100, type=int)
+        parser.add_argument('--epoch', default=10**10, type=int)
         parser.add_argument('--savefolder', default='tmp')
         parser.add_argument('--checkpoint', default=None)
         parser.add_argument('--size', default=64, type=int)
@@ -83,6 +85,7 @@ if __name__ == '__main__':
         parser.add_argument('--d_activation', default='lrelu')
         parser.add_argument('--disable_zviz', default=True, action='store_true')
         parser.add_argument('--discriminator', default=None)
+        parser.add_argument('--endstep',type=int,required=True)
         # parser.add_argument('--fakestatsper',default=10,type=int)
         args = parser.parse_args()
         epoch = args.epoch
