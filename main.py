@@ -107,6 +107,7 @@ if __name__ == '__main__':
             shutil.rmtree(f'tfb/{args.savefolder}', ignore_errors=True)
             shutil.rmtree(f'{savefolder}', ignore_errors=True)
         writer = SummaryWriter(log_dir=f'tfb/{args.savefolder}')
+        writer.add_text('args',f'{args}')
         os.makedirs(savefolder, exist_ok=True)
         if args.g_activation == 'relu':
             g_activation = nn.ReLU(inplace=True)
