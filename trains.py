@@ -7,6 +7,7 @@ def makecommand(obj,c):
         subprocess.run(cmd)
         return 0
     arg,values=obj[0]
+    if type(values)!=type([]):values=[values]
     for v in values:
         makecommand(obj[1:],c+[f'--{arg}', f'{v}'])
         
