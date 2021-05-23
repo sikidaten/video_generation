@@ -65,9 +65,9 @@ class AutoEncoder(nn.Module):
                 loss.backward()
                 self.optimizer.step()
                 self.zero_grad()
-        return {'loss':{'recon':reconloss.item()},'images':recon}
+        return {'loss':{'recon':reconloss.item()},'images':recon*0.5+0.5}
     def generate(self,x):
-        return self.decoder(x)
+        return self.decoder(x)*0.5+0.5
 
 if __name__=='__main__':
     model=AutoEncoder(torch.optim.Adam,F.mse_loss,128,nn.ReLU())
