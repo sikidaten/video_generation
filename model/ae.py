@@ -56,13 +56,15 @@ class AutoEncoder(nn.Module):
         x=self.encoder(x)
         x=self.decoder(x)
         return x
-    def trainbatch(self,img):
-        recon=self.forward(img)
-        reconloss=self.reconloss(recon,img)
-        loss=reconloss
-        loss.backward()
-        self.optimizer.step()
-        self.zero_grad()
+    def batch(self,img,phase):
+        with torch.set_grad_enabled(phase=='train'):
+            recon=self.forward(img)
+            reconloss=self.reconloss(recon,img)
+            loss=reconloss
+            if phase=='train':
+                loss.backward()
+                self.optimizer.step()
+                self.zero_grad()
         return {'loss':{'recon':reconloss.item()},'images':recon}
     def generate(self,x):
         return self.decoder(x)

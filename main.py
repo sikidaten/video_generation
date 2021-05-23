@@ -28,9 +28,8 @@ def operate(phase):
 
     for img in loader:
         iter_number[phase] += 1
-        with torch.set_grad_enabled(phase == 'train'):
-            B, C, H, W = img.shape
-            outstats = model.trainbatch(img.to(device))
+        B, C, H, W = img.shape
+        outstats = model.batch(img.to(device),phase=phase)
         log = f'{iter_number[phase]},{outstats["loss"]}'
         with open(logpath, 'a')as f:
             f.write(log + '\n')
