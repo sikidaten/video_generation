@@ -21,16 +21,26 @@ class TFRDataloader():
         image = tf.transpose(image, [2, 0, 1])
         return image
 
-    def __init__(self, path, epoch, batch, s, m, size=None):
+    def __init__(self, path, epoch, batch, s, m, split,size=None):
         self.size = size
+        self.path=path
         self.batch = batch
         self.epoch = epoch
-        self.tfdataset = tf.data.TFRecordDataset(path) \
-            .map(self._parse_image_function) \
-            .repeat(epoch) \
-            .prefetch(5) \
-            .batch(batch) \
-            .as_numpy_iterator()
+        self.split=split
+        self.size = size
+        valsize = 50000
+        if self.split == 'all':
+            tfdataset = tf.data.TFRecordDataset(path)
+        elif split == 'train':
+            tfdataset = tf.data.TFRecordDataset(path).skip(valsize)
+        else:
+            tfdataset = tf.data.TFRecordDataset(path).take(valsize)
+        self.tfdataset = tfdataset \
+        .map(self._parse_image_function) \
+        .repeat(epoch) \
+        .prefetch(5) \
+        .batch(batch) \
+        .as_numpy_iterator()
         self.m = m
         self.s = s
 
@@ -43,6 +53,8 @@ class TFRDataloader():
 
     def __len__(self):
         return 202589 // self.batch
+    def init(self):
+        self.__init__(path=self.path,epoch=self.epoch,batch=self.batch,s=self.s,m=self.m,split=self.split,size=self.size)
 
 
 if __name__ == '__main__':

@@ -79,7 +79,7 @@ def make_gt_inception(model, loader, device):
     for i, data in enumerate(loader):
         with torch.set_grad_enabled(False):
             print(f'\r{i},{len(loader)},{i/len(loader)*100:2.0f}%',end='')
-            img = data[1]
+            img = data
             img = img.to(device)
             # print(img.shape)
             output = model(img)[0]
