@@ -67,7 +67,7 @@ class VariationalAutoEncoder(nn.Module):
     def parameterize(self, x):
         logvar, mu = x.chunk(2, dim=1)
         rand = torch.randn_like(logvar)
-        return rand * logvar.exp() + mu, logvar, mu
+        return rand * (logvar/2).exp() + mu, logvar, mu
 
     def forward(self, x):
         x = self.encoder(x)
@@ -79,7 +79,7 @@ class VariationalAutoEncoder(nn.Module):
         with torch.set_grad_enabled(phase == 'train'):
             recon, logvar, mu = self.forward(img)
             reconloss = self.reconloss(recon, img)
-            KLDloss = -0.5 * (1 + 2*logvar  - mu ** 2 - logvar.exp()**2).mean()
+            KLDloss = -0.5 * (1 + logvar  - mu ** 2 - logvar.exp()).mean()
             loss = reconloss + KLDloss
             if phase == 'train':
                 loss.backward()
