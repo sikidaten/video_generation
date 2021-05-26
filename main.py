@@ -10,7 +10,7 @@ import pickle as pkl
 import torch.nn.functional as F
 import torch.nn as nn
 import utils.util as U
-from model.ae import AutoEncoder
+from model.vae import VariationalAutoEncoder
 from utils.tfrecord import TFRDataloader
 from torch.utils.tensorboard import SummaryWriter
 import shutil
@@ -78,6 +78,7 @@ if __name__ == '__main__':
     parser.add_argument('--debug', default=False, action='store_true')
     parser.add_argument('--activation', default='relu')
     parser.add_argument('--disable_zviz', default=True, action='store_true')
+    parser.add_argument('--KLD',default='Bernoulli')
     args = parser.parse_args()
     epoch = args.epoch
     device = 'cuda' if torch.cuda.is_available() and not args.cpu else 'cpu'
@@ -103,17 +104,18 @@ if __name__ == '__main__':
     if args.optimizer == 'adam':
         optimizer = torch.optim.Adam
     if args.model == 'ae':
-        model = AutoEncoder(optimizer=optimizer, reconloss=reconloss, activation=activation)
+        model = VariationalAutoEncoder(optimizer=optimizer, reconloss=args.KLD, activation=activation)
 
     if args.dataset == 'celeba':
         # loader = torch.utils.data.DataLoader(
         #     CelebADataset(torchvision.datasets.CelebA(args.datasetpath, 'all', download=True), args.size, args.zsize,debug=args.debug),
         #     batch_size=args.batchsize, num_workers=4, shuffle=True)
+        s,m=(0.5,0.5) if args.KLD!='Bernoulli' else (1,0)
         trainloader = TFRDataloader(path=args.datasetpath + '/celeba.tfrecord', epoch=1, batch=args.batchsize,
-                                    size=args.size, s=0.5, m=0.5, split='train')
+                                    size=args.size, s=s,m=m, split='train')
 
         valloader = TFRDataloader(path=args.datasetpath + '/celeba.tfrecord', epoch=1, batch=args.batchsize,
-                                  size=args.size, s=0.5, m=0.5, split='val')
+                                  size=args.size, s=s,m=m, split='val')
     inceptionstats = {}
     for phase in ['train', 'val']:
         realstatspath = f'__{args.dataset}_real_{phase}.pkl'
