@@ -28,7 +28,7 @@ class VQDicFunction(torch.autograd.Function):
 class VQDic(nn.Module):
     def __init__(self, z_dic):
         super(VQDic, self).__init__()
-        self.z_dic = z_dic
+        self.z_dic = nn.Parameter(z_dic,requires_grad=False)
 
     def forward(self, *x):
         return VQDicFunction.apply(*x, self.z_dic)
@@ -37,7 +37,7 @@ class VQDic(nn.Module):
 class VQVAE(nn.Module):
     def __init__(self, optimizer, activation, dicsize, ):
         super(VQVAE, self).__init__()
-        self.dicsize=dicsize
+        self.dicsize = dicsize
         modules = []
         hidden_dims = [32, 64, 128, 256, 512]
         z_feature = hidden_dims[-1]
@@ -90,15 +90,16 @@ class VQVAE(nn.Module):
 
     def forward(self, x):
         z = self.encoder(x)
-        self.z_shape=z.shape
-        print(z.shape)
+        self.z_shape = z.shape
         vqz, vqzidx = self.vqdic(z)
         x = self.decoder(vqz)
         return x, z, vqz, vqzidx
 
     def update_dic(self, z, vqzidx):
         for i in range(self.dicsize):
-            self.z_dic[:,i]=z.permute(0,2,3,1)[vqzidx==i].mean(0)
+            if (vqzidx==i).any():
+                self.z_dic[:, i] = z.permute(0, 2, 3, 1)[vqzidx == i].mean(0)
+
     def batch(self, img, phase):
         with torch.set_grad_enabled(phase == 'train'):
             recon, z, vqz, vqzidx = self.forward(img)
@@ -113,19 +114,18 @@ class VQVAE(nn.Module):
         return {'loss': {f'recon_{phase}': reconloss.item(), f'KLD_{phase}': KLDloss.item()},
                 'images': recon}
 
-    def generate(self):
-        B,F,H,W=self.z_shape
-        randn=torch.randint(0,self.dicsize,[B*H*W])
-        vqz=self.z_dic[:,randn].reshape(F,B,H,W).permute(1,0,2,3)
+    def generate(self,randn):
+        B, F, H, W = self.z_shape
+        # randn = torch.randint(0, self.dicsize, [B * H * W])
+        vqz = self.z_dic[:, randn].reshape(F, B, H, W).permute(1, 0, 2, 3).to(randn.device)
         return self.decoder(vqz)
 
 
-
 if __name__ == '__main__':
-    model = VQVAE(optimizer=torch.optim.Adam,activation=nn.ReLU(),dicsize=128)
+    model = VQVAE(optimizer=torch.optim.Adam, activation=nn.ReLU(), dicsize=128)
     print(model)
     img = torch.randn(8, 3, 128, 128)
-    loss = model.batch(img,'train')
+    loss = model.batch(img, 'train')
     print(loss)
 
     model.generate()

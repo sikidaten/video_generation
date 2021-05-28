@@ -79,6 +79,7 @@ if __name__ == '__main__':
     parser.add_argument('--activation', default='relu')
     parser.add_argument('--disable_zviz', default=True, action='store_true')
     parser.add_argument('--KLD',default='Bernoulli')
+    parser.add_argument('--dicsize',default=512,type=int)
     args = parser.parse_args()
     epoch = args.epoch
     device = 'cuda' if torch.cuda.is_available() and not args.cpu else 'cpu'
@@ -104,7 +105,7 @@ if __name__ == '__main__':
     if args.optimizer == 'adam':
         optimizer = torch.optim.Adam
     if args.model == 'ae':
-        model = VQVAE(optimizer=optimizer, reconloss=args.KLD, activation=activation)
+        model = VQVAE(optimizer=optimizer, activation=activation,dicsize=args.dicsize)
 
     if args.dataset == 'celeba':
         # loader = torch.utils.data.DataLoader(
@@ -138,7 +139,8 @@ if __name__ == '__main__':
     #     model = torch.nn.DataParallel(model).to(device)
     model=model.to(device)
     iter_number = {'train': 0, 'val': 0}
-    testinput = torch.randn(args.batchsize, 512, 2,2).to(device)
+    # testinput = torch.randn(args.batchsize, 512, 2,2).to(device)
+    testinput=torch.randint(0, args.dicsize, [args.batchsize * 2 * 2]).to(device)
     for e in range(epoch):
         operate('train')
         operate('val')
