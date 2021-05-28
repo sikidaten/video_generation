@@ -10,7 +10,7 @@ import pickle as pkl
 import torch.nn.functional as F
 import torch.nn as nn
 import utils.util as U
-from model.vae import VariationalAutoEncoder
+from model.vqvae import VQVAE
 from utils.tfrecord import TFRDataloader
 from torch.utils.tensorboard import SummaryWriter
 import shutil
@@ -104,7 +104,7 @@ if __name__ == '__main__':
     if args.optimizer == 'adam':
         optimizer = torch.optim.Adam
     if args.model == 'ae':
-        model = VariationalAutoEncoder(optimizer=optimizer, reconloss=args.KLD, activation=activation)
+        model = VQVAE(optimizer=optimizer, reconloss=args.KLD, activation=activation)
 
     if args.dataset == 'celeba':
         # loader = torch.utils.data.DataLoader(
