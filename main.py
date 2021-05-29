@@ -111,7 +111,7 @@ if __name__ == '__main__':
         # loader = torch.utils.data.DataLoader(
         #     CelebADataset(torchvision.datasets.CelebA(args.datasetpath, 'all', download=True), args.size, args.zsize,debug=args.debug),
         #     batch_size=args.batchsize, num_workers=4, shuffle=True)
-        s,m=(0.5,0.5) if args.KLD!='Bernoulli' else (1,0)
+        s,m=(0.5,0.5)
         trainloader = TFRDataloader(path=args.datasetpath + '/celeba.tfrecord', epoch=1, batch=args.batchsize,
                                     size=args.size, s=s,m=m, split='train')
 
@@ -140,7 +140,7 @@ if __name__ == '__main__':
     model=model.to(device)
     iter_number = {'train': 0, 'val': 0}
     # testinput = torch.randn(args.batchsize, 512, 2,2).to(device)
-    testinput=torch.randint(0, args.dicsize, [args.batchsize * 2 * 2]).to(device)
+    testinput=torch.randint(0, args.dicsize, [args.batchsize , 2 , 2]).to(device)
     for e in range(epoch):
         operate('train')
         operate('val')

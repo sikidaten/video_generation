@@ -51,7 +51,7 @@ class VQVAE(nn.Module):
                     activation)
             )
             in_ch = h_dim
-
+        modules.append(nn.Conv2d(z_feature,z_feature,1))
         self.encoder = nn.Sequential(*modules)
         modules = []
         hidden_dims.reverse()
@@ -115,9 +115,9 @@ class VQVAE(nn.Module):
                 'images': recon}
 
     def generate(self,randn):
-        B, F, H, W = self.z_shape
+        B,H,W=randn.shape
         # randn = torch.randint(0, self.dicsize, [B * H * W])
-        vqz = self.z_dic[:, randn].reshape(F, B, H, W).permute(1, 0, 2, 3).to(randn.device)
+        vqz = self.z_dic[:, randn.reshape(-1)].reshape(-1, B, H, W).permute(1, 0, 2, 3).to(randn.device)
         return self.decoder(vqz)
 
 
