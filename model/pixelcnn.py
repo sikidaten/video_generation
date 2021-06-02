@@ -10,7 +10,7 @@ class MaskedConv2D(nn.Module):
         mask = torch.zeros(in_ch, k, k)
         mask[:, :k // 2, :] = 1
         mask[:, k // 2, :k // 2] = 1
-        self.mask=nn.Parameter(mask)
+        self.mask = nn.Parameter(mask)
         self.k = k
 
     def forward(self, x):
@@ -32,7 +32,8 @@ class MaskedAtention(nn.Module):
 
 
 class NaivePixelCNN(nn.Module):
-    def __init__(self, feature,num_layer=5, activaton=nn.Hardswish(),optimizer=torch.optim.Adam,sm='-1_1', lossf=None):
+    def __init__(self, feature, num_layer=5, activaton=nn.Hardswish(), optimizer=torch.optim.Adam, sm='-1_1',
+                 lossf=None):
         super(NaivePixelCNN, self).__init__()
         self.lossf = lossf
         layer = []
@@ -41,9 +42,9 @@ class NaivePixelCNN(nn.Module):
             layer.append(MaskedConv2D(feature, feature, 5))
             layer.append(nn.BatchNorm2d(feature))
             layer.append(activaton)
-        layer.append(MaskedConv2D(feature, 256*3, 5))
+        layer.append(MaskedConv2D(feature, 256 * 3, 5))
         self.layer = nn.ModuleList(layer)
-        self.optimizer=optimizer(self.layer.parameters())
+        self.optimizer = optimizer(self.layer.parameters())
         self.sm = sm
 
     def forward(self, x):
@@ -53,27 +54,32 @@ class NaivePixelCNN(nn.Module):
 
     def loss(self, img):
         output = self.forward(img)
-        B,C,H,W=output.shape
+        B, C, H, W = output.shape
         if self.lossf is not None:
             return self.lossf(output, img)
         elif self.sm == '-1_1':
-            return F.cross_entropy(output.reshape(B,3,C//3,H,W).permute(0,2,1,3,4), ((img * 0.5 + 0.5) * 255).long()),(output.reshape(B,3,C//3,H,W).argmax(2)/255-0.5)/0.5
-    def batch(self,img,phase):
-        with torch.set_grad_enabled(phase=='train'):
-            loss,outimg=self.loss(img)
-            loss.backward()
-            self.optimizer.step()
-            self.optimizer.zero_grad()
-            return {'loss':{'recon':loss.item()},'images':outimg}
-    def generate(self,size,device='cpu'):
-        return torch.zeros(32,3,size,size).to(device)
+            return F.cross_entropy(output.reshape(B, 3, C // 3, H, W).permute(0, 2, 1, 3, 4),
+                                   ((img * 0.5 + 0.5) * 255).long()), (
+                               output.reshape(B, 3, C // 3, H, W).argmax(2) / 255 - 0.5) / 0.5
+
+    def batch(self, img, phase):
+        with torch.set_grad_enabled(phase == 'train'):
+            loss, outimg = self.loss(img)
+            if phase=='train':
+                loss.backward()
+                self.optimizer.step()
+                self.optimizer.zero_grad()
+            return {'loss': {'recon': loss.item()}, 'images': outimg}
+
+    def generate(self, size, device='cpu'):
+        return torch.zeros(32, 3, size, size).to(device)
         with torch.no_grad():
-            img=torch.zeros(1,3,size,size).to(device)
+            img = torch.zeros(1, 3, size, size).to(device)
             for i in range(size):
                 for j in range(size):
-                    output=self.forward(img)
-                    img[0,:,i,j]=F.softmax(output[0,:,i,j].reshape(3,256),dim=-1).multinomial(1).squeeze()
-            return img/255
+                    output = self.forward(img)
+                    img[0, :, i, j] = F.softmax(output[0, :, i, j].reshape(3, 256), dim=-1).multinomial(1).squeeze()
+            return img / 255
 
 
 if __name__ == '__main__':
