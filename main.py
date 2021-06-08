@@ -34,10 +34,12 @@ def operate(phase):
         with open(logpath, 'a')as f:
             f.write(log + '\n')
         print(log)
-        writer.add_scalars('loss', outstats['loss'], iter_number[phase])
 
         generatedimages = model.generate(testinput)
         mvci.iter(inception(generatedimages.detach().to(device))[0])
+        outstats['images']=outstats['images']/s+m
+        generatedimages=generatedimages/s+m
+        writer.add_scalars('loss', outstats['loss'], iter_number[phase])
         # save_image(generatedimages, f'{savefolder}/gen_{iter_number[phase]}.jpg')
         # save_image(outstats['images'], f'{savefolder}/recon_{iter_number[phase]}.jpg')
         save_image(torch.cat([generatedimages[:B],outstats['images']],dim=2),f'{savefolder}/{iter_number[phase]}.jpg')
@@ -70,7 +72,7 @@ if __name__ == '__main__':
     parser.add_argument('--zsize', type=int, default=128)
     parser.add_argument('--epoch', default=100, type=int)
     parser.add_argument('--savefolder', default='tmp')
-    parser.add_argument('--size', default=64, type=int)
+    parser.add_argument('--size', default=128, type=int)
     parser.add_argument('--reconloss', default='mse')
     parser.add_argument('--feature', default=128, type=int)
     parser.add_argument('--cpu', default=False, action='store_true')
@@ -105,7 +107,7 @@ if __name__ == '__main__':
     if args.optimizer == 'adam':
         optimizer = torch.optim.Adam
     if args.model == 'ae':
-        model = VQVAE(optimizer=optimizer, activation=activation,dicsize=args.dicsize)
+        model = VQVAE(optimizer=optimizer, activation=activation, zdicsize=args.dicsize,feature=args.feature,z_feature=1)
 
     if args.dataset == 'celeba':
         # loader = torch.utils.data.DataLoader(
@@ -140,7 +142,7 @@ if __name__ == '__main__':
     model=model.to(device)
     iter_number = {'train': 0, 'val': 0}
     # testinput = torch.randn(args.batchsize, 512, 2,2).to(device)
-    testinput=torch.randint(0, args.dicsize, [args.batchsize , 2 , 2]).to(device)
+    testinput=torch.randint(0, args.dicsize, [args.batchsize , 32 , 32]).to(device)
     for e in range(epoch):
         operate('train')
         operate('val')
