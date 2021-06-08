@@ -38,10 +38,11 @@ def operate(phase):
 
         generatedimages = model.generate(testinput)
         mvci.iter(inception(generatedimages.detach().to(device))[0])
-        outstats['images']=outstats['images'].cpu()/s+m
-        generatedimages=generatedimages.cpu()/s+m
+        outstats['images']=outstats['images'].cpu()*s+m
+        generatedimages=generatedimages.cpu()*s+m
+        img=img*s+m
         writer.add_scalars('loss', outstats['loss'], iter_number[phase])
-        save_image(torch.cat([generatedimages[:B],outstats['images']],dim=2),f'{savefolder}/{iter_number[phase]}.jpg')
+        save_image(torch.cat([img,generatedimages[:B],outstats['images']],dim=2),f'{savefolder}/{iter_number[phase]}.jpg')
     writer.add_images('recon_images', outstats['images'], iter_number[phase])
     writer.add_images('gen_images', generatedimages, iter_number[phase])
     # get FID
