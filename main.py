@@ -11,6 +11,7 @@ import torch.nn.functional as F
 import torch.nn as nn
 import utils.util as U
 from model.vqvae import VQVAE
+from model.vqvae_vae import VQVAE_vae
 from utils.tfrecord import TFRDataloader
 from torch.utils.tensorboard import SummaryWriter
 import shutil
@@ -37,11 +38,9 @@ def operate(phase):
 
         generatedimages = model.generate(testinput)
         mvci.iter(inception(generatedimages.detach().to(device))[0])
-        outstats['images']=outstats['images']/s+m
-        generatedimages=generatedimages/s+m
+        outstats['images']=outstats['images'].cpu()/s+m
+        generatedimages=generatedimages.cpu()/s+m
         writer.add_scalars('loss', outstats['loss'], iter_number[phase])
-        # save_image(generatedimages, f'{savefolder}/gen_{iter_number[phase]}.jpg')
-        # save_image(outstats['images'], f'{savefolder}/recon_{iter_number[phase]}.jpg')
         save_image(torch.cat([generatedimages[:B],outstats['images']],dim=2),f'{savefolder}/{iter_number[phase]}.jpg')
     writer.add_images('recon_images', outstats['images'], iter_number[phase])
     writer.add_images('gen_images', generatedimages, iter_number[phase])
@@ -108,6 +107,7 @@ if __name__ == '__main__':
         optimizer = torch.optim.Adam
     if args.model == 'ae':
         model = VQVAE(optimizer=optimizer, activation=activation, zdicsize=args.dicsize,feature=args.feature,z_feature=1)
+        # model = VQVAE_vae(optimizer=optimizer, activation=activation, dicsize=args.dicsize)
 
     if args.dataset == 'celeba':
         # loader = torch.utils.data.DataLoader(
@@ -141,8 +141,8 @@ if __name__ == '__main__':
     #     model = torch.nn.DataParallel(model).to(device)
     model=model.to(device)
     iter_number = {'train': 0, 'val': 0}
-    # testinput = torch.randn(args.batchsize, 512, 2,2).to(device)
-    testinput=torch.randint(0, args.dicsize, [args.batchsize , 32 , 32]).to(device)
+    # testinput = torch.randint(0,args.dicsize,[args.batchsize, 4,4]).to(device)
+    testinput=torch.randint(0, args.dicsize, [args.batchsize , args.size//4 , args.size//4]).to(device)
     for e in range(epoch):
         operate('train')
         operate('val')

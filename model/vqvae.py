@@ -2,7 +2,36 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from model.vqvae_vae import VQDic
+
+class VQDicFunction(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, *input):
+        with torch.no_grad():
+            z, z_dic = input
+
+            def getnearrestdicidx(z, z_dic):
+                B, F, H, W = z.shape
+                _F, K = z_dic.shape
+                assert F == _F
+                ret = ((z.reshape(B, F, 1, H, W) - z_dic.reshape(1, F, K, 1, 1)) ** 2).mean(dim=1).argmin(dim=1)
+                return ret
+
+            idx = getnearrestdicidx(z, z_dic)
+            return z_dic[:, idx].permute(1, 0, 2, 3), idx
+
+    @staticmethod
+    def backward(ctx, *grad_x):
+        grad_x = grad_x[0]
+        return grad_x, None
+
+
+class VQDic(nn.Module):
+    def __init__(self, z_dic):
+        super(VQDic, self).__init__()
+        self.z_dic = nn.Parameter(z_dic, requires_grad=False)
+
+    def forward(self, *x):
+        return VQDicFunction.apply(*x, self.z_dic)
 
 
 class ResBlock(nn.Module):
@@ -59,15 +88,16 @@ class VQVAE(nn.Module):
             if phase == 'train':
                 loss.backward()
                 self.optimizer.step()
-                self.update_dic(z, vqzidx)
+                self.update_dic(z.detach(), vqzidx)
                 self.zero_grad()
+
         return {'loss': {f'recon_{phase}': reconloss.item(), f'KLD_{phase}': KLDloss.item()},
                 'images': recon}
 
     def generate(self, randn):
         B, H, W = randn.shape
-        vqz = self.z_dic[:, randn.reshape(-1)].reshape(-1, B, H, W).permute(1, 0, 2, 3).to(randn.device)
-        return self.decoder(vqz)
+        vqz = self.z_dic[:, randn.reshape(-1)].reshape(-1, B, H, W).permute(1, 0, 2, 3)
+        return self.decoder(vqz.to(randn.device))
 
     def update_dic(self, z, vqzidx):
         for i in range(self.zdicsize):
