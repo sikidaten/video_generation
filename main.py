@@ -15,6 +15,8 @@ from model.vqvae_vae import VQVAE_vae
 from utils.tfrecord import TFRDataloader
 from torch.utils.tensorboard import SummaryWriter
 import shutil
+from pytorch_msssim import MS_SSIM
+from loss import SSIMLoss
 
 
 def operate(phase):
@@ -103,7 +105,13 @@ if __name__ == '__main__':
     elif args.activation == 'lrelu':
         activation = nn.LeakyReLU(0.2, inplace=True)
     if args.reconloss == 'mse':
-        reconloss = F.mse_loss
+        reconloss = nn.MSELoss()
+    elif args.reconloss == 'l1':
+        reconloss = nn.L1Loss()
+    elif args.reconloss == 'ssim':
+        reconloss = SSIMLoss()
+    elif(args.reconloss=='msssim'):
+        reconloss=lambda x,y:1-MS_SSIM()(x,y)
     if args.optimizer == 'adam':
         optimizer = torch.optim.Adam
     if args.model == 'ae':
