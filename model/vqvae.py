@@ -69,7 +69,7 @@ class VQVAE(nn.Module):
         self.decoder = nn.Sequential(makemodule(nn.ConvTranspose2d, z_feature, 3), nn.Tanh())
 
         self.reconloss = nn.MSELoss()  # TODO really???
-        self.optimizer = optimizer(self.parameters())
+        self.optimizer = optimizer(self.parameters(),2e-4)
         self.z_dic = torch.randn(z_feature, self.zdicsize)
         self.vqdic = VQDic(self.z_dic)
 
