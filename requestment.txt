@@ -6,3 +6,4 @@ cloudpickle
 zviz
 pandas
 tensorflow
+pytorch_msssim
