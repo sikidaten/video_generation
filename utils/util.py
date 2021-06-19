@@ -1,25 +1,36 @@
 import numpy as np
 import torch
-from scipy import linalg
 import torch.nn.functional as F
+from scipy import linalg
 
 
 def min(x, a):
     return torch.stack([torch.zeros_like(x) + a, x]).min(0)[0]
 
-def linerinterpolateroundlog2(mi,ma,n):
-    ret=2**(np.round(np.log2((ma-mi)/(n-1)*np.arange(n)+mi))).astype(int)
-    return np.where(ret<mi,mi,ret)
+
+def linerinterpolateroundlog2(mi, ma, n):
+    ret = 2 ** (np.round(np.log2((ma - mi) / (n - 1) * np.arange(n) + mi))).astype(int)
+    return np.where(ret < mi, mi, ret)
+
+
 def max(x, a):
     return torch.stack([torch.zeros_like(x) + a, x]).max(0)[0]
+
+
 import cloudpickle
-def savecloudpickle(obj,path):
-    with open(path,'wb') as f:
+
+
+def savecloudpickle(obj, path):
+    with open(path, 'wb') as f:
         f.write(cloudpickle.dumps(obj))
+
+
 def loadcloudpickle(path):
-    with open(path,'rb') as f:
-        _obj=cloudpickle.loads(f.read())
+    with open(path, 'rb') as f:
+        _obj = cloudpickle.loads(f.read())
     return _obj
+
+
 # class MeanVariance_iter:
 #     def __init__(self):
 #         self.n = 0
@@ -36,9 +47,9 @@ def loadcloudpickle(path):
 #         self.mu = mun
 #         return sn, mun
 
-    # def get(self, isbias=True):
-    #     bias = self.n / (self.n - 1) if isbias else 1
-    #     return self.s * bias, self.mu * bias
+# def get(self, isbias=True):
+#     bias = self.n / (self.n - 1) if isbias else 1
+#     return self.s * bias, self.mu * bias
 
 
 class MeanCoVariance_iter:
@@ -48,7 +59,7 @@ class MeanCoVariance_iter:
         self.mu = torch.zeros(1).to(device)
 
     def iter(self, xn):
-        xn=xn.double()
+        xn = xn.double()
         B, C, _, _ = xn.shape
         xn = xn.view(B, C)
         mun = (self.n * self.mu + xn.sum(dim=0)) / (self.n + B)
@@ -78,7 +89,7 @@ def make_gt_inception(model, loader, device):
     MCVI = MeanCoVariance_iter(device)
     for i, data in enumerate(loader):
         with torch.set_grad_enabled(False):
-            print(f'\r{i},{len(loader)},{i/len(loader)*100:2.0f}%',end='')
+            print(f'\r{i},{len(loader)},{i / len(loader) * 100:2.0f}%', end='')
             img = data[1]
             img = img.to(device)
             # print(img.shape)
@@ -97,35 +108,51 @@ def make_gt_inception(model, loader, device):
 
 def fid(cogtsigma, gtmean, cofakesigma, fakemean):
     return (torch.norm(gtmean - fakemean) ** 2 \
-           + torch.trace(cogtsigma) + torch.trace(cofakesigma) - 2 * (torch.trace(sqrtm(cogtsigma @ cofakesigma)))).item()
+            + torch.trace(cogtsigma) + torch.trace(cofakesigma) - 2 * (
+                torch.trace(sqrtm(cogtsigma @ cofakesigma)))).item()
+
+
 def rgb_distance(x):
-    return F.l1_loss(x.permute(0,3,2,1).reshape(-1,3).mean(0),torch.tensor([0.555,0.431,0.352])).item()
+    return F.l1_loss(x.permute(0, 3, 2, 1).reshape(-1, 3).mean(0), torch.tensor([0.555, 0.431, 0.352])).item()
+
+
 def similarity(x):
-    B,C,H,W=x.shape
-    x0=x.reshape(B,1,C,H,W)
-    x1=x.reshape(1,B,C,H,W)
-    return F.l1_loss(x0,x1)
+    B, C, H, W = x.shape
+    x0 = x.reshape(B, 1, C, H, W)
+    x1 = x.reshape(1, B, C, H, W)
+    return F.l1_loss(x0, x1)
+
+
 def get_singular(module):
-    ret={}
-    for n,p in module.named_parameters():
+    ret = {}
+    for n, p in module.named_parameters():
         if 'weight' in n:
-            _p=p
-            ret[n]=torch.svd(_p.reshape(_p.shape[0],-1))[1].max().item()
-    return ret
-def get_singular_with_SN(model):
-    ret={}
-    params=model.state_dict()
-    for key in params:
-        if 'weight_orig' in key:
-            _w=params[key]
-            _u=params[key.replace('orig','u')]
-            _v=params[key.replace('orig','v')]
-            if _w.shape[1]==_u.shape[0]:
-                _w=_w.permute(1,0,2,3)
-            _w = _w.reshape(_w.shape[0], -1)
-            ret[key]=_u@_w@_v
-    assert ret!={}
+            _p = p
+            ret[n] = torch.svd(_p.reshape(_p.shape[0], -1))[1].max().item()
     return ret
 
+
+def get_singular_with_SN(model):
+    ret = {}
+    params = model.state_dict()
+    for key in params:
+        if 'weight_orig' in key:
+            _w = params[key]
+            _u = params[key.replace('orig', 'u')]
+            _v = params[key.replace('orig', 'v')]
+            if _w.shape[1] == _u.shape[0]:
+                _w = _w.permute(1, 0, 2, 3)
+            _w = _w.reshape(_w.shape[0], -1)
+            ret[key] = _u @ _w @ _v
+    assert ret != {}
+    return ret
+
+
+from torch.nn.utils import spectral_norm
+import torch.nn as nn
+
+def add_sn(m):
+    return spectral_norm(m) if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d)) else m
+
 if __name__ == '__main__':
-    print(linerinterpolateroundlog2(64,512,3))
+    print(linerinterpolateroundlog2(64, 512, 3))

@@ -40,7 +40,8 @@ def operate():
         writer.add_scalars('singularD', singularD, i)
 
         generatedimages = (model.generator(testinput) * 0.5) + 0.5
-        save_image(generatedimages, f'{savefolder}/{i}.jpg')
+        save_image(generatedimages, f'{savefolder}/{i}_gen.jpg')
+        save_image(torch.cat([stats['image']['Drealout'],stats['images']['Dfakeout']],dim=2), f'{savefolder}/{i}_dout.jpg')
         if i % 1000 == 0 and i != 0:
 
             writer.add_images('images', generatedimages, i)
@@ -85,7 +86,8 @@ if __name__ == '__main__':
         parser.add_argument('--d_activation', default='lrelu')
         parser.add_argument('--disable_zviz', default=True, action='store_true')
         parser.add_argument('--discriminator', default=None)
-        parser.add_argument('--endstep',type=int,required=True)
+        parser.add_argument('--endstep',type=int)
+        parser.add_argument('--snnorm',default=True,action='store_false')
         # parser.add_argument('--fakestatsper',default=10,type=int)
         args = parser.parse_args()
         epoch = args.epoch
@@ -155,6 +157,8 @@ if __name__ == '__main__':
                           lossG=lossG, zsize=args.zsize, feature=args.feature, d_activation=d_activation,
                           g_activation=g_activation, enable_zviz=not args.disable_zviz, discriminator=discriminator,
                           size=args.size)
+        if args.snnorm:
+            model.apply(U.add_sn)
 
         if args.dataset == 'celeba':
             # loader = torch.utils.data.DataLoader(

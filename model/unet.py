@@ -1,46 +1,52 @@
-from collections import OrderedDict
-
 import torch
 import torch.nn as nn
+from torch.nn.utils import spectral_norm
 
 
 class UNet(nn.Module):
 
-    def __init__(self, in_channels=3, out_channels=1, init_features=32):
+    def __init__(self, in_channels=3, out_channels=1, init_features=32, activation=None, snnorm=False):
         super(UNet, self).__init__()
 
         features = init_features
-        self.encoder1 = UNet._block(in_channels, features, name="enc1")
-        self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.encoder2 = UNet._block(features, features * 2, name="enc2")
-        self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.encoder3 = UNet._block(features * 2, features * 4, name="enc3")
-        self.pool3 = nn.MaxPool2d(kernel_size=2, stride=2)
-        self.encoder4 = UNet._block(features * 4, features * 8, name="enc4")
-        self.pool4 = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.activation = activation if activation else nn.LeakyReLU(0.2,inplace=True)
+        self.snnorm = snnorm
+        self.encoder1 = self.block(in_channels, features)
+        # self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.pool1 = nn.Conv2d(features, features, kernel_size=1, stride=2)
+        self.encoder2 = self.block(features, features * 2)
+        # self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.pool2 = nn.Conv2d(features * 2, features * 2, kernel_size=1, stride=2)
+        self.encoder3 = self.block(features * 2, features * 4)
+        # self.pool3 = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.pool3 = nn.Conv2d(features * 4, features * 4, kernel_size=1, stride=2)
+        self.encoder4 = self.block(features * 4, features * 8)
+        # self.pool4 = nn.MaxPool2d(kernel_size=2, stride=2)
+        self.pool4 = nn.Conv2d(features * 8, features * 8, kernel_size=1, stride=2)
 
-        self.bottleneck = UNet._block(features * 8, features * 16, name="bottleneck")
+        self.bottleneck = self.block(features * 8, features * 16)
 
         self.upconv4 = nn.ConvTranspose2d(
             features * 16, features * 8, kernel_size=2, stride=2
         )
-        self.decoder4 = UNet._block((features * 8) * 2, features * 8, name="dec4")
+        self.decoder4 = self.block((features * 8) * 2, features * 8)
         self.upconv3 = nn.ConvTranspose2d(
             features * 8, features * 4, kernel_size=2, stride=2
         )
-        self.decoder3 = UNet._block((features * 4) * 2, features * 4, name="dec3")
+        self.decoder3 = self.block((features * 4) * 2, features * 4)
         self.upconv2 = nn.ConvTranspose2d(
             features * 4, features * 2, kernel_size=2, stride=2
         )
-        self.decoder2 = UNet._block((features * 2) * 2, features * 2, name="dec2")
+        self.decoder2 = self.block((features * 2) * 2, features * 2)
         self.upconv1 = nn.ConvTranspose2d(
             features * 2, features, kernel_size=2, stride=2
         )
-        self.decoder1 = UNet._block(features * 2, features, name="dec1")
+        self.decoder1 = self.block(features * 2, features)
 
         self.conv = nn.Conv2d(
             in_channels=features, out_channels=out_channels, kernel_size=1
         )
+        self.linear = nn.Sequential(self.activation, nn.Linear(features * 16, 1))
 
     def forward(self, x):
         # x=x.permute(0,3,1,2)
@@ -65,44 +71,22 @@ class UNet(nn.Module):
         dec1 = self.decoder1(dec1)
 
         x = self.conv(dec1)
-        return x
+        z = bottleneck.sum([2, 3])
+        z=self.linear(z)
+        return x,z
 
-    @staticmethod
-    def _block(in_channels, features, name):
-        return nn.Sequential(
-            OrderedDict(
-                [
-                    (
-                        name + "conv1",
-                        nn.Conv2d(
-                            in_channels=in_channels,
-                            out_channels=features,
-                            kernel_size=3,
-                            padding=1,
-                            bias=False,
-                        ),
-                    ),
-                    (name + "norm1", nn.BatchNorm2d(num_features=features)),
-                    (name + "relu1", nn.ReLU(inplace=True)),
-                    (
-                        name + "conv2",
-                        nn.Conv2d(
-                            in_channels=features,
-                            out_channels=features,
-                            kernel_size=3,
-                            padding=1,
-                            bias=False,
-                        ),
-                    ),
-                    (name + "norm2", nn.BatchNorm2d(num_features=features)),
-                    (name + "relu2", nn.ReLU(inplace=True)),
-                ]
-            )
-        )
+    def block(self, in_channels, features):
+        conv1 = nn.Conv2d(in_channels=in_channels, out_channels=features, kernel_size=3, padding=1, bias=False)
+        conv2 = nn.Conv2d(in_channels=features, out_channels=features, kernel_size=3, padding=1, bias=False, )
+        # if self.snnorm:
+        #     conv1, conv2 = spectral_norm(conv1), spectral_norm(conv2)
+        return nn.Sequential(conv1, nn.BatchNorm2d(features), self.activation, conv2, nn.BatchNorm2d(features), self.activation)
 
 
 if __name__ == "__main__":
-
+    add_sn=lambda m:spectral_norm(m) if isinstance(m,(nn.Conv2d,nn.ConvTranspose2d)) else m
     model = UNet()
+    model.apply(add_sn)
+    print(model)
     output = model(torch.randn(1, 3, 64, 64))
-    print(output.shape)
+    print(output[0].shape,output[1].shape)
