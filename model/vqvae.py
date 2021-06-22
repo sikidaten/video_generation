@@ -51,7 +51,7 @@ class ResBlock(nn.Module):
 
 
 class VQVAE(nn.Module):
-    def __init__(self, feature, z_feature, optimizer, activation, zdicsize=512):
+    def __init__(self, feature, z_feature, optimizer, activation, zdicsize=512,gamma=0.99):
         super(VQVAE, self).__init__()
         self.zdicsize = zdicsize
 
@@ -72,6 +72,10 @@ class VQVAE(nn.Module):
         self.optimizer = optimizer(self.parameters(),2e-4)
         self.z_dic = torch.randn(z_feature, self.zdicsize)
         self.vqdic = VQDic(self.z_dic)
+
+        self.N=0
+        self.m=torch.zeros(self.zdicsize)
+        self.gamma=gamma
 
     def forward(self, x):
         z = self.encoder(x)
@@ -100,6 +104,11 @@ class VQVAE(nn.Module):
         return self.decoder(vqz.to(randn.device))
 
     def update_dic(self, z, vqzidx):
+        B,C,H,W=z.shape
+        _N=self.N*self.gamma+B*(1-self.gamma)
+        self.N=_N
         for i in range(self.zdicsize):
             if (vqzidx == i).any():
-                self.z_dic[:, i] = z.permute(0, 2, 3, 1)[vqzidx == i].mean(0)
+                _mi=self.m[i]*self.gamma+z.permute(0, 2, 3, 1)[vqzidx == i].sum(0)*(1-self.gamma)
+                self.z_dic[:, i] = _mi/_N
+                self.m[i]=_mi

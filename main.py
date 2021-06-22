@@ -154,7 +154,7 @@ if __name__ == '__main__':
     testinput=torch.randint(0, args.dicsize, [args.batchsize , args.size//4 , args.size//4]).to(device)
     for e in range(epoch):
         operate('train')
-        operate('val')
+        # operate('val')
     writer.close()
 
 # except:

@@ -52,7 +52,7 @@ class TFRDataloader():
         return (torch.from_numpy(next(self.tfdataset)) - self.m) / self.s
 
     def __len__(self):
-        return 202589 // self.batch
+        return 202589 // self.batch//4
     def init(self):
         self.__init__(path=self.path,epoch=self.epoch,batch=self.batch,s=self.s,m=self.m,split=self.split,size=self.size)
 
