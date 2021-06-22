@@ -6,8 +6,8 @@ import utils.util as U
 from model.common import InterpolateConvcnn
 from model.unet import UNet
 from utils.spectral_norm import spectral_norm
-
-
+from utils.cutmix import CutMix
+import torch.nn.functional as F
 class BaseModel(nn.Module):
     def __init__(self, in_ch, out_ch, feature, size, scale_factor, lastactivation, activation, is_G=False,
                  snnorm=False):
@@ -126,12 +126,17 @@ class DCGAN(nn.Module):
             fakeoutimg, fakeout = self.discriminator(fake.detach())
             lossDfake = self.lossDfake(fakeout).mean()
             lossDfakeimg = self.lossDfake(fakeoutimg).mean()
-            self.zviz.backward(lossDfake + lossDfakeimg + lossDreal + lossDrealimg)
+            ##CR
+            crmap = CutMix(size)
+            crloss = F.mse_loss(self.discriminator(realimg*crmap+fake*(1-crmap)),realout * crmap+fakeout * (1 - crmap))
+            self.zviz.backward(lossDfake + lossDfakeimg + lossDreal + lossDrealimg+crloss)
             self.zviz.step('optD')
             self.zviz.zero_grad('optD')
         else:
             lossDfake = torch.tensor([0.])
             lossDreal = torch.tensor([0.])
+            crloss = torch.tensor([0.])
+
 
         fakeoutimg, fakeout = self.discriminator(fake)
         lossG = self.lossG(fakeout).mean()
@@ -142,7 +147,7 @@ class DCGAN(nn.Module):
         self.zviz.zero_grad('optD')
         self.zviz.clear()
         self.zviz.disable_forever()
-        return {'loss': {'Dreal': lossDreal.item(), 'Dfake': lossDfake.item(), 'G': lossG.item()},
+        return {'loss': {'Dreal': lossDreal.item(), 'Dfake': lossDfake.item(), 'G': lossG.item(),'CR':crloss},
                 'image': {'fake': fake.detach().cpu(), 'Dfakeout': fakeoutimg.detach(),
                           'Drealout': realoutimg.detach()}}
 
