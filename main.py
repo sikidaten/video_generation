@@ -29,11 +29,11 @@ def operate(phase):
 
     mvci = U.MeanCoVariance_iter(device)
 
-    for img in loader:
+    for idx,img in enumerate(loader):
         iter_number[phase] += 1
         B, C, H, W = img.shape
         outstats = model.batch(img.to(device),phase=phase)
-        log = f'{e}/{epoch},{iter_number[phase]},{outstats["loss"]}'
+        log = f'{e}/{epoch},{idx}/{len(loader)},{iter_number[phase]},{outstats["loss"]}'
         with open(logpath, 'a')as f:
             f.write(log + '\n')
         print(log)
