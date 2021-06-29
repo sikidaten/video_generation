@@ -72,6 +72,7 @@ class NaivePixelCNN(nn.Module):
             return {'loss': {'recon': loss.item()}, 'images': outimg}
 
     def generate(self, size, device='cpu',num=1):
+        self.eval()
         ret= torch.zeros(128, 3, size, size).to(device)
         for idx in range(num):
             with torch.no_grad():
@@ -81,6 +82,7 @@ class NaivePixelCNN(nn.Module):
                         output = self.forward(img)
                         img[0, :, i, j] = F.softmax(output[0, :, i, j].reshape(3, 256), dim=-1).multinomial(1).squeeze()
                 ret[idx]=img / 255
+        self.train()
         return ret
 
 
