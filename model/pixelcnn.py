@@ -80,7 +80,7 @@ class NaivePixelCNN(nn.Module):
                 for i in range(size):
                     for j in range(size):
                         output = self.forward(ret)
-                        ret[:,:,i,j]=(F.softmax(output[:, :, i, j].reshape(B * 3, 256), dim=-1).multinomial(1).reshape(B, 3)-self.m)/self.s
+                        ret[:,:,i,j]=(F.softmax(output[:, :, i, j].reshape(B * 3, 256), dim=-1).multinomial(1).reshape(B, 3)/255-self.m)/self.s
             self.train()
         return ret
 
