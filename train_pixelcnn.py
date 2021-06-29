@@ -30,7 +30,7 @@ def operate(phase):
         iter_number[phase] += 1
         B, C, H, W = img.shape
         outstats = model.batch(img.to(device),phase=phase)
-        log = f'{e}/{epoch}, {iter_number[phase]}/{len(loader)},{outstats["loss"]}'
+        log = f'{e}/{epoch}, {idx}/{len(loader)},{outstats["loss"]}'
         with open(logpath, 'a')as f:
             f.write(log + '\n')
         print(log)
