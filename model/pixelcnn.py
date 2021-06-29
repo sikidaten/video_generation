@@ -44,7 +44,7 @@ class NaivePixelCNN(nn.Module):
             layer.append(activaton)
         layer.append(MaskedConv2D(feature, 256 * 3, 5))
         self.layer = nn.ModuleList(layer)
-        self.optimizer = optimizer(self.layer.parameters(),1e-4)
+        self.optimizer = optimizer(self.layer.parameters())
         self.sm = sm
 
     def forward(self, x):
