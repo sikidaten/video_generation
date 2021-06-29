@@ -71,15 +71,17 @@ class NaivePixelCNN(nn.Module):
                 self.optimizer.zero_grad()
             return {'loss': {'recon': loss.item()}, 'images': outimg}
 
-    def generate(self, size, device='cpu'):
-        return torch.zeros(32, 3, size, size).to(device)
-        with torch.no_grad():
-            img = torch.zeros(1, 3, size, size).to(device)
-            for i in range(size):
-                for j in range(size):
-                    output = self.forward(img)
-                    img[0, :, i, j] = F.softmax(output[0, :, i, j].reshape(3, 256), dim=-1).multinomial(1).squeeze()
-            return img / 255
+    def generate(self, size, device='cpu',num=1):
+        ret= torch.zeros(32, 3, size, size).to(device)
+        for idx in range(num):
+            with torch.no_grad():
+                img = torch.zeros(1, 3, size, size).to(device)
+                for i in range(size):
+                    for j in range(size):
+                        output = self.forward(img)
+                        img[0, :, i, j] = F.softmax(output[0, :, i, j].reshape(3, 256), dim=-1).multinomial(1).squeeze()
+                ret[idx]=img / 255
+        return ret
 
 
 if __name__ == '__main__':

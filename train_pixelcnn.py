@@ -26,7 +26,7 @@ def operate(phase):
 
     mvci = U.MeanCoVariance_iter(device)
 
-    for img in loader:
+    for idx,img in enumerate(loader):
         iter_number[phase] += 1
         B, C, H, W = img.shape
         outstats = model.batch(img.to(device),phase=phase)
@@ -36,7 +36,7 @@ def operate(phase):
         print(log)
         writer.add_scalars('loss', outstats['loss'], iter_number[phase])
 
-        generatedimages = model.generate(args.size,device=device)
+        generatedimages = model.generate(args.size,device=device,num=int((idx%1000)==0))
         outstats['images']=outstats['images']*s+m
         generatedimages=generatedimages*s+m
         mvci.iter(inception(generatedimages.detach().to(device))[0])
