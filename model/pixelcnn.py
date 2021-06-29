@@ -75,12 +75,13 @@ class NaivePixelCNN(nn.Module):
     def generate(self, size, device='cpu',num=1,B=1):
         self.eval()
         ret= torch.zeros(B, 3, size, size).to(device)
-        with torch.no_grad():
-            for i in range(size):
-                for j in range(size):
-                    output = self.forward(ret)
-                    ret[:,:,i,j]=(F.softmax(output[:, :, i, j].reshape(B * 3, 256), dim=-1).multinomial(1).reshape(B, 3)-self.m)/self.s
-        self.train()
+        if num>0:
+            with torch.no_grad():
+                for i in range(size):
+                    for j in range(size):
+                        output = self.forward(ret)
+                        ret[:,:,i,j]=(F.softmax(output[:, :, i, j].reshape(B * 3, 256), dim=-1).multinomial(1).reshape(B, 3)-self.m)/self.s
+            self.train()
         return ret
 
 
