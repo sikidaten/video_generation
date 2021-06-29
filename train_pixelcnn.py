@@ -36,13 +36,13 @@ def operate(phase):
         print(log)
         writer.add_scalars('loss', outstats['loss'], iter_number[phase])
 
-        generatedimages = model.generate(args.size,device=device,num=int((idx%1000)==0),B=B)
+        generatedimages = model.generate(args.size,device=device,num=(idx%1000)==0,B=B)
         outstats['images']=outstats['images']*s+m
         generatedimages=generatedimages*s+m
         mvci.iter(inception(generatedimages.detach().to(device))[0])
         # save_image(generatedimages, f'{savefolder}/gen_{iter_number[phase]}.jpg')
         # save_image(outstats['images'], f'{savefolder}/recon_{iter_number[phase]}.jpg')
-        save_image(torch.cat([generatedimages[:B]*s+m,outstats['images']],dim=2),f'{savefolder}/{iter_number[phase]}.jpg')
+        save_image(torch.cat([generatedimages[:B]*s+m,outstats['images']],dim=2),f'{savefolder}/{e}_{idx}.jpg')
     writer.add_images('recon_images', outstats['images'], iter_number[phase])
     writer.add_images('gen_images', generatedimages, iter_number[phase])
     # get FID
@@ -145,7 +145,7 @@ if __name__ == '__main__':
     testinput=torch.randint(0, args.dicsize, [args.batchsize , 2 , 2]).to(device)
     for e in range(epoch):
         operate('train')
-        operate('val')
+        # operate('val')
     writer.close()
 
 # except:

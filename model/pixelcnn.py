@@ -75,7 +75,7 @@ class NaivePixelCNN(nn.Module):
     def generate(self, size, device='cpu',num=1,B=1):
         self.eval()
         ret= torch.zeros(B, 3, size, size).to(device)
-        if num>0:
+        if num:
             with torch.no_grad():
                 for i in range(size):
                     for j in range(size):
