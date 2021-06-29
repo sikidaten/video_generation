@@ -72,7 +72,7 @@ class NaivePixelCNN(nn.Module):
             return {'loss': {'recon': loss.item()}, 'images': outimg}
 
     def generate(self, size, device='cpu',num=1):
-        ret= torch.zeros(32, 3, size, size).to(device)
+        ret= torch.zeros(128, 3, size, size).to(device)
         for idx in range(num):
             with torch.no_grad():
                 img = torch.zeros(1, 3, size, size).to(device)
