@@ -46,6 +46,7 @@ class NaivePixelCNN(nn.Module):
         self.layer = nn.ModuleList(layer)
         self.optimizer = optimizer(self.layer.parameters())
         self.sm = sm
+        self.s,self.m=(0.5,0.5) if sm=='-1_1' else (1,0)
 
     def forward(self, x):
         for l in self.layer:
@@ -80,8 +81,8 @@ class NaivePixelCNN(nn.Module):
                 for i in range(size):
                     for j in range(size):
                         output = self.forward(img)
-                        img[0, :, i, j] = F.softmax(output[0, :, i, j].reshape(3, 256), dim=-1).multinomial(1).squeeze()
-                ret[idx]=img / 255
+                        img[0, :, i, j] = (F.softmax(output[0, :, i, j].reshape(3, 256), dim=-1).multinomial(1).squeeze()/255-self.m)/self.s
+                ret[idx]=img
         self.train()
         return ret
 
