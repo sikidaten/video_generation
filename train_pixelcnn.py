@@ -36,7 +36,7 @@ def operate(phase):
         print(log)
         writer.add_scalars('loss', outstats['loss'], iter_number[phase])
 
-        generatedimages = model.generate(args.size,device=device,num=int((idx%1000)==0))
+        generatedimages = model.generate(args.size,device=device,num=int((idx%1000)==0),B=B)
         outstats['images']=outstats['images']*s+m
         generatedimages=generatedimages*s+m
         mvci.iter(inception(generatedimages.detach().to(device))[0])
