@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-
+from model.githubmaskedcnn import PixelCNN
 class MaskedConv2D(nn.Module):
     def __init__(self, in_ch, out_ch, k):
         super(MaskedConv2D, self).__init__()
@@ -43,15 +43,15 @@ class NaivePixelCNN(nn.Module):
             layer.append(nn.BatchNorm2d(feature))
             layer.append(activaton)
         layer.append(MaskedConv2D(feature, 256 * 3, 5))
-        self.layer = nn.ModuleList(layer)
+        # self.layer = nn.ModuleList(layer)
+        self.layer = PixelCNN(channels=feature)
+        print(self.layer)
         self.optimizer = optimizer(self.layer.parameters())
         self.sm = sm
         self.s,self.m=(0.5,0.5) if sm=='-1_1' else (1,0)
 
     def forward(self, x):
-        for l in self.layer:
-            x = l(x)
-        return x
+        return self.layer(x)
 
     def loss(self, img):
         output = self.forward(img)
@@ -59,9 +59,7 @@ class NaivePixelCNN(nn.Module):
         if self.lossf is not None:
             return self.lossf(output, img)
         elif self.sm == '-1_1':
-            return F.cross_entropy(output.reshape(B, 3, C // 3, H, W).permute(0, 2, 1, 3, 4),
-                                   ((img * 0.5 + 0.5) * 255).long()), (
-                               output.reshape(B, 3, C // 3, H, W).argmax(2) / 255 - 0.5) / 0.5
+            return F.cross_entropy(output.reshape(B, 3, 256, H, W).permute(0, 2, 1, 3, 4),((img * 0.5 + 0.5) * 255).long()), (output.reshape(B, 3, 256, H, W).argmax(2) / 255 - 0.5) / 0.5
 
     def batch(self, img, phase):
         with torch.set_grad_enabled(phase == 'train'):
