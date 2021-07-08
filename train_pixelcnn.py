@@ -40,9 +40,7 @@ def operate(phase):
         outstats['images']=outstats['images']*s+m
         generatedimages=generatedimages*s+m
         mvci.iter(inception(generatedimages.detach().to(device))[0])
-        # save_image(generatedimages, f'{savefolder}/gen_{iter_number[phase]}.jpg')
-        # save_image(outstats['images'], f'{savefolder}/recon_{iter_number[phase]}.jpg')
-        save_image(torch.cat([generatedimages[:B]*s+m,outstats['images']],dim=2),f'{savefolder}/{e}_{idx}.jpg')
+        if idx%1000==0:save_image(torch.cat([generatedimages[:B]*s+m,outstats['images']],dim=2),f'{savefolder}/{e}_{idx}.jpg')
     writer.add_images('recon_images', outstats['images'], iter_number[phase])
     writer.add_images('gen_images', generatedimages, iter_number[phase])
     # get FID
