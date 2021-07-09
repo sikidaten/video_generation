@@ -32,18 +32,18 @@ class MaskedAtention(nn.Module):
 
 
 class NaivePixelCNN(nn.Module):
-    def __init__(self, feature, num_layer=5, activaton=nn.Hardswish(), optimizer=torch.optim.Adam, sm='-1_1',
+    def __init__(self, feature, num_layer=20, activaton=nn.Hardswish(), optimizer=torch.optim.Adam, sm='-1_1',
                  lossf=None):
         super(NaivePixelCNN, self).__init__()
         self.lossf = lossf
         layer = []
-        layer.append(MaskedConv2D(3, feature, num_layer))
-        for i in range(5):
+        layer.append(MaskedConv2D(3, feature, 5))
+        for i in range(num_layer):
             layer.append(MaskedConv2D(feature, feature, 5))
             layer.append(nn.BatchNorm2d(feature))
             layer.append(activaton)
-        layer.append(MaskedConv2D(feature, 256 * 3, 5))
-        # self.layer = nn.ModuleList(layer)
+        # layer.append(MaskedConv2D(feature, 256 * 3, 5))
+        self.layer = nn.ModuleList(layer)
         self.layer = PixelCNN(channels=feature)
         print(self.layer)
         self.optimizer = optimizer(self.layer.parameters())
