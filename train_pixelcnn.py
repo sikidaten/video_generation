@@ -10,7 +10,7 @@ import pickle as pkl
 import torch.nn.functional as F
 import torch.nn as nn
 import utils.util as U
-from model.pixelcnn import NaivePixelCNN
+from model.pixelcnn import PixelCNN
 from utils.tfrecord import TFRDataloader
 from torch.utils.tensorboard import SummaryWriter
 import shutil
@@ -107,7 +107,7 @@ if __name__ == '__main__':
     if args.optimizer == 'adam':
         optimizer = torch.optim.Adam
     if args.model == 'ae':
-        model = NaivePixelCNN(feature=args.feature,activaton=activation,optimizer=optimizer)
+        model = PixelCNN(feature=args.feature, activaton=activation, optimizer=optimizer)
 
     if args.dataset == 'celeba':
         # loader = torch.utils.data.DataLoader(
