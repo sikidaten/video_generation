@@ -51,13 +51,7 @@ def operate(phase):
     writer.add_scalar(f'fid/{phase}', fid, iter_number[phase])
     # Co.addvalue(writer,'IS',IS,e)
     print(f'fid:{fid:.2f}')
-    U.savecloudpickle({
-        'model': model.to('cpu'),
-        'e': e,
-        'args': args,
-        'realstats': (realsigma, realmu),
-    }, savefolder + f'/chk.pth')
-    model.to(device)
+
 
 
 if __name__ == '__main__':
