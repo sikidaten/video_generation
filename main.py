@@ -51,12 +51,12 @@ def operate():
             # Co.addvalue(writer,'IS',IS,e)
             print(f'fid:{fid:.2f}')
 
-            U.savecloudpickle({
-                'model': model.to('cpu'),
-                'e': e,
-                'args': args,
-                'realstats': (realsigma, realmu),
-            }, savefolder + f'/chk.pth')
+            # U.savecloudpickle({
+            #     'model': model.to('cpu'),
+            #     'e': e,
+            #     'args': args,
+            #     'realstats': (realsigma, realmu),
+            # }, savefolder + f'/chk.pth')
             model.to(device)
         if i==args.endstep:
             break
@@ -85,7 +85,7 @@ if __name__ == '__main__':
         parser.add_argument('--d_activation', default='lrelu')
         parser.add_argument('--disable_zviz', default=True, action='store_true')
         parser.add_argument('--discriminator', default=None)
-        parser.add_argument('--endstep',type=int,required=True)
+        parser.add_argument('--endstep',type=int,default=10000)
         # parser.add_argument('--fakestatsper',default=10,type=int)
         args = parser.parse_args()
         epoch = args.epoch

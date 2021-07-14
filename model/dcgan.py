@@ -19,18 +19,20 @@ class BaseModel(nn.Module):
         #       for i in range(numrange)])
         # self.outconv = nn.Conv2d(features[-1], out_ch, 3, padding=1)
         self.inconv = nn.Conv2d(in_ch, feature, 1)
-        self.convs = nn.Sequential(
-            *[InterpolateConvcnn(in_ch=feature, out_ch=feature, scale_factor=scale_factor,
+        self.convs = nn.ModuleList(
+            [InterpolateConvcnn(in_ch=feature, out_ch=feature, scale_factor=scale_factor,
                                  activate=activation, snnorm=snnorm, batchnorm=(i in [2, 3, 4]))
               for i in range(numrange)])
         self.outconv = nn.Conv2d(feature, out_ch, 3, padding=1)
         if snnorm:self.inconv=spectral_norm(self.inconv)
         if snnorm:self.outconv=spectral_norm(self.outconv)
         self.lastactivation = lastactivation
-
+        self.scale_factor=scale_factor
     def forward(self, x):
         x = self.inconv(x)
-        x = self.convs(x)
+        # x = self.convs(x)
+        for layer in self.convs:
+            x=layer(x)+F.upsample_bilinear(x,scale_factor=self.scale_factor)
         x = self.outconv(x)
         x = self.lastactivation(x)
         return x
@@ -94,13 +96,13 @@ class DCGAN(nn.Module):
                  discriminator=None,mode_seek_lambda=1):
         super(DCGAN, self).__init__()
         self.mode_seek_lambda=mode_seek_lambda
-        self.generator = Generator(zsize, feature, 3, activation=g_activation)
-        self.discriminator = discriminator if discriminator else Discriminator(3, feature, activation=d_activation,size=size)
-        # self.generator = BaseModel(in_ch=zsize, out_ch=3, feature=feature, scale_factor=2, size=size,
-        #                            lastactivation=nn.Tanh(), activation=g_activation,is_G=True)
-        # self.discriminator = BaseModel(in_ch=3, out_ch=1, feature=feature, size=size, scale_factor=0.5,
-        #                                lastactivation=nn.Identity(), activation=d_activation,
-        #                                is_G=False) if discriminator is None else discriminator
+        # self.generator = Generator(zsize, feature, 3, activation=g_activation)
+        # self.discriminator = discriminator if discriminator else Discriminator(3, feature, activation=d_activation,size=size)
+        self.generator = BaseModel(in_ch=zsize, out_ch=3, feature=feature, scale_factor=2, size=size,
+                                   lastactivation=nn.Tanh(), activation=g_activation,is_G=True)
+        self.discriminator = BaseModel(in_ch=3, out_ch=1, feature=feature, size=size, scale_factor=0.5,
+                                       lastactivation=nn.Identity(), activation=d_activation,
+                                       is_G=False) if discriminator is None else discriminator
         self.generator.apply(self.weights_init)
         self.discriminator.apply(self.weights_init)
         self.zviz = Zviz({'G': self.generator, 'D': self.discriminator} if enable_zviz else {})
@@ -161,8 +163,8 @@ if __name__ == '__main__':
     discriminator = BaseModel(in_ch=3, out_ch=1, feature=128, size=size, scale_factor=0.5, lastactivation=nn.Identity(),
                               activation=nn.ReLU(),
                               is_G=False,)
-    print(generator)
-    output = generator(torch.randn(1, 128, 1, 1))
-    # print(discriminator)
-    # output = discriminator(torch.randn(8, 3, size, size))
+    # print(generator)
+    # output = generator(torch.randn(1, 128, 1, 1))
+    print(discriminator)
+    output = discriminator(torch.randn(8, 3, size, size))
     print(output.shape)
