@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from utils.spectral_norm import spectral_norm
-from model.resnet import Bottleneck,BasicBlock
+from model.resnet import conv1x1,conv3x3
 class _sqlinear(torch.autograd.Function):
     def __init__(self,cut=0,linear=1):
         self.cut=cut
@@ -29,17 +29,18 @@ class SQLinear(nn.Module):
     def forward(self,x):
         return _sqlinear(cut=self.cut,linear=self.linear).apply(x)
 
-class BAC(nn.Module):
+class CA(nn.Module):
     def __init__(self,feature,kernel,activation):
-        super(BAC, self).__init__()
-        # self.bn=nn.LayerNorm()
+        super(CA, self).__init__()
         self.conv=nn.Conv2d(feature,feature,kernel,padding=(kernel-1)//2)
         self.activation=activation
     def forward(self,x):
-        # x=self.bn(x)
         x=self.conv(x)
         x=self.activation(x)
         return x
+
+
+
 class InterpolateConv(nn.Module):
     def __init__(self, in_ch, out_ch, scale_factor, activate=nn.ReLU(inplace=True), batchnorm=True, snnorm=True):
         super(InterpolateConv, self).__init__()
