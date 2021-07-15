@@ -30,14 +30,16 @@ def operate():
         log = f'{i},{outstats["loss"], stats}'
         with open(logpath, 'a')as f:
             f.write(log + '\n')
-        print(log)
+        for key in outstats['loss']:
+            print(f'{key},{outstats["loss"][key]:.2f},',end='')
+        print()
         writer.add_scalars('loss', outstats['loss'], i)
         writer.add_scalars('stats', stats, i)
 
-        singularG = U.get_singular_with_SN(model.generator)
-        singularD = U.get_singular_with_SN(model.discriminator)
-        writer.add_scalars('singularG', singularG, i)
-        writer.add_scalars('singularD', singularD, i)
+        # singularG = U.get_singular_with_SN(model.generator)
+        # singularD = U.get_singular_with_SN(model.discriminator)
+        # writer.add_scalars('singularG', singularG, i)
+        # writer.add_scalars('singularD', singularD, i)
 
         generatedimages = (model.generator(testinput) * 0.5) + 0.5
         save_image(generatedimages, f'{savefolder}/{i}.jpg')

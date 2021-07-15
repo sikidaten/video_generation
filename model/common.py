@@ -32,13 +32,13 @@ class SQLinear(nn.Module):
 class BAC(nn.Module):
     def __init__(self,feature,kernel,activation):
         super(BAC, self).__init__()
-        self.bn=nn.BatchNorm2d(feature)
-        self.activation=activation
+        # self.bn=nn.LayerNorm()
         self.conv=nn.Conv2d(feature,feature,kernel,padding=(kernel-1)//2)
+        self.activation=activation
     def forward(self,x):
-        x=self.bn(x)
-        x=self.activation(x)
+        # x=self.bn(x)
         x=self.conv(x)
+        x=self.activation(x)
         return x
 class InterpolateConv(nn.Module):
     def __init__(self, in_ch, out_ch, scale_factor, activate=nn.ReLU(inplace=True), batchnorm=True, snnorm=True):

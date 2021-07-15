@@ -94,8 +94,8 @@ class DCGAN(nn.Module):
         self.discriminator = BaseModel(in_ch=3, out_ch=1, feature=feature, size=size, scale_factor=0.5,
                                        lastactivation=nn.Identity(), activation=d_activation,
                                        is_G=False) if discriminator is None else discriminator
-        self.generator.apply(self.weights_init)
-        self.discriminator.apply(self.weights_init)
+        # self.generator.apply(self.weights_init)
+        # self.discriminator.apply(self.weights_init)
         self.zviz = Zviz({'G': self.generator, 'D': self.discriminator} if enable_zviz else {})
         self.optG = optimizerG(self.generator.parameters(), lr=0.00005, betas=(0, 0.999))
         self.optD = optimizerD(self.discriminator.parameters(), lr=0.0002, betas=(0, 0.999))
@@ -123,18 +123,18 @@ class DCGAN(nn.Module):
         # self.zviz.clear()
         B,C,H,W=realimg.shape
         fake = self.generator(noise)
-        if trainD:
-            realout = self.discriminator(realimg)
-            lossDreal = self.lossDreal(realout).mean()
-            fakeout = self.discriminator(fake.detach())
-            lossDfake = self.lossDfake(fakeout).mean()
-            self.zviz.backward(lossDfake)
-            self.zviz.backward(lossDreal)
-            self.zviz.step('optD')
-            self.zviz.zero_grad('optD')
-        else:
-            lossDfake = torch.tensor([0.])
-            lossDreal = torch.tensor([0.])
+        realimg.requires_grad=True
+        realout = self.discriminator(realimg)
+        lossDreal = self.lossDreal(realout).mean()
+        fakeout = self.discriminator(fake.detach())
+        lossDfake = self.lossDfake(fakeout).mean()
+        gradients_penalty=torch.autograd.grad(outputs=lossDreal,inputs=realimg,retain_graph=True)[0]
+        gradients_penalty=(gradients_penalty*torch.randn_like(gradients_penalty,requires_grad=True)).mean()
+        gradients_penalty.backward()
+        self.zviz.backward(lossDreal)
+        self.zviz.backward(lossDfake)
+        self.zviz.step('optD')
+        self.zviz.zero_grad('optD')
 
         fakeout = self.discriminator(fake)
         lossG = self.lossG(fakeout).mean()
@@ -144,7 +144,7 @@ class DCGAN(nn.Module):
         self.zviz.zero_grad('optD')
         self.zviz.clear()
         self.zviz.disable_forever()
-        return {'loss':{'Dreal':lossDreal.item(), 'Dfake':lossDfake.item(), 'G':lossG.item()}, 'image':{'fake':fake.detach().cpu()}}
+        return {'loss':{'Dreal':lossDreal.item(), 'Dfake':lossDfake.item(), 'G':lossG.item(),"R1":gradients_penalty.item()}, 'image':{'fake':fake.detach().cpu()}}
 
 
 if __name__ == '__main__':
