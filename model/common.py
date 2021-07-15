@@ -29,7 +29,17 @@ class SQLinear(nn.Module):
     def forward(self,x):
         return _sqlinear(cut=self.cut,linear=self.linear).apply(x)
 
-
+class BAC(nn.Module):
+    def __init__(self,feature,kernel,activation):
+        super(BAC, self).__init__()
+        self.bn=nn.BatchNorm2d(feature)
+        self.activation=activation
+        self.conv=nn.Conv2d(feature,feature,kernel,padding=(kernel-1)//2)
+    def forward(self,x):
+        x=self.bn(x)
+        x=self.activation(x)
+        x=self.conv(x)
+        return x
 class InterpolateConv(nn.Module):
     def __init__(self, in_ch, out_ch, scale_factor, activate=nn.ReLU(inplace=True), batchnorm=True, snnorm=True):
         super(InterpolateConv, self).__init__()

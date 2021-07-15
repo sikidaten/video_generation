@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import utils.util as U
-from model.common import InterpolateConv,InterpolateConvcnn
+from model.common import InterpolateConv,InterpolateConvcnn,BAC
 from utils.spectral_norm import spectral_norm
 from model.resnet import Bottleneck, BasicBlock
 
@@ -14,7 +14,7 @@ class BaseModel(nn.Module):
         numrange = int(np.log2(size))
         self.inconv = nn.Conv2d(in_ch, feature, 1)
         self.convs = nn.ModuleList(
-            [Bottleneck(feature,feature,base_width=feature,expansion=1) for i in range(numrange)])
+            [BAC(feature=feature,kernel=3,activation=activation) for i in range(numrange)])
         self.outconv = nn.Conv2d(feature, out_ch, 3, padding=1)
         if snnorm:self.inconv=spectral_norm(self.inconv)
         if snnorm:self.outconv=spectral_norm(self.outconv)
