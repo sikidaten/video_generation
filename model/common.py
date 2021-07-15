@@ -42,7 +42,9 @@ class CNA(nn.Module):
         self.scale_factor=scale_factor
     def forward(self,x):
         x=self.conv(x)
-        x=self.normlayer(x)
+        if x.shape[2]*x.shape[3]!=1:
+            print('skip')
+            x=self.normlayer(x)
         x=self.activation(x)
         return x
 
