@@ -5,24 +5,16 @@ import torch.nn.functional as F
 import utils.util as U
 from model.common import InterpolateConv,InterpolateConvcnn
 from utils.spectral_norm import spectral_norm
+from model.resnet import Bottleneck, BasicBlock
 
 
 class BaseModel(nn.Module):
     def __init__(self, in_ch, out_ch, feature, size, scale_factor, lastactivation, activation, is_G=False,snnorm=False):
         super(BaseModel, self).__init__()
         numrange = int(np.log2(size))
-        features = U.linerinterpolateroundlog2(feature, 512, numrange+1)
-        if is_G: features = features[::-1]
-        # self.inconv = nn.Conv2d(in_ch, features[0], 1)
-        # self.convs = nn.Sequential(
-        #     *[InterpolateConvcnn(in_ch=features[i], out_ch=features[i + 1], scale_factor=scale_factor, activate=activation,snnorm=True,batchnorm=(i in [2,3,4]))
-        #       for i in range(numrange)])
-        # self.outconv = nn.Conv2d(features[-1], out_ch, 3, padding=1)
         self.inconv = nn.Conv2d(in_ch, feature, 1)
         self.convs = nn.ModuleList(
-            [InterpolateConvcnn(in_ch=feature, out_ch=feature, scale_factor=scale_factor,
-                                 activate=activation, snnorm=snnorm, batchnorm=(i in [2, 3, 4]))
-              for i in range(numrange)])
+            [Bottleneck(feature,feature,base_width=feature,expansion=1) for i in range(numrange)])
         self.outconv = nn.Conv2d(feature, out_ch, 3, padding=1)
         if snnorm:self.inconv=spectral_norm(self.inconv)
         if snnorm:self.outconv=spectral_norm(self.outconv)
@@ -30,9 +22,8 @@ class BaseModel(nn.Module):
         self.scale_factor=scale_factor
     def forward(self, x):
         x = self.inconv(x)
-        # x = self.convs(x)
         for layer in self.convs:
-            x=layer(x)+F.upsample_bilinear(x,scale_factor=self.scale_factor)
+            x=F.upsample_bilinear(x+layer(x),scale_factor=self.scale_factor)
         x = self.outconv(x)
         x = self.lastactivation(x)
         return x
@@ -163,8 +154,8 @@ if __name__ == '__main__':
     discriminator = BaseModel(in_ch=3, out_ch=1, feature=128, size=size, scale_factor=0.5, lastactivation=nn.Identity(),
                               activation=nn.ReLU(),
                               is_G=False,)
-    # print(generator)
-    # output = generator(torch.randn(1, 128, 1, 1))
-    print(discriminator)
-    output = discriminator(torch.randn(8, 3, size, size))
+    print(generator)
+    output = generator(torch.randn(8, 128, 1, 1))
+    # print(discriminator)
+    # output = discriminator(torch.randn(8, 3, size, size))
     print(output.shape)

@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from utils.spectral_norm import spectral_norm
+from model.resnet import Bottleneck,BasicBlock
 class _sqlinear(torch.autograd.Function):
     def __init__(self,cut=0,linear=1):
         self.cut=cut
