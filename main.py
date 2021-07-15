@@ -30,6 +30,7 @@ def operate():
         log = f'{i},{outstats["loss"], stats}'
         with open(logpath, 'a')as f:
             f.write(log + '\n')
+        print(f'{i} ',end='')
         for key in outstats['loss']:
             print(f'{key},{outstats["loss"][key]:.2f},',end='')
         print()
