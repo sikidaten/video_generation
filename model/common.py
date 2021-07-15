@@ -44,7 +44,6 @@ class CNA(nn.Module):
         x=self.conv(x)
         if x.shape[2]*x.shape[3]<=4:
             x=self.normlayer(x)
-        else:
         x=self.activation(x)
         return x
 
