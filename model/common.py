@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from utils.spectral_norm import spectral_norm
 from model.resnet import conv1x1,conv3x3
 class _sqlinear(torch.autograd.Function):
@@ -29,13 +30,19 @@ class SQLinear(nn.Module):
     def forward(self,x):
         return _sqlinear(cut=self.cut,linear=self.linear).apply(x)
 
-class CA(nn.Module):
-    def __init__(self,feature,kernel,activation):
-        super(CA, self).__init__()
-        self.conv=nn.Conv2d(feature,feature,kernel,padding=(kernel-1)//2)
+class CNA(nn.Module):
+    def __init__(self, feature, kernel, norm_layer, activation, scale_factor):
+        super(CNA, self).__init__()
+        if scale_factor==0.5:
+            self.conv=nn.Conv2d(feature,feature,kernel,padding=(kernel-1)//2,stride=2)
+        else:
+            self.conv=nn.ConvTranspose2d(feature,feature,kernel,padding=(kernel-1)//2,stride=2,output_padding=1)
+        self.normlayer=norm_layer(feature)
         self.activation=activation
+        self.scale_factor=scale_factor
     def forward(self,x):
         x=self.conv(x)
+        x=self.normlayer(x)
         x=self.activation(x)
         return x
 
@@ -77,11 +84,6 @@ class InterpolateConvcnn(nn.Module):
         return self.main(x)
 
 if __name__ == '__main__':
-    model=SQLinear()
-    data = torch.randn(4)*2
-    data.requires_grad=True
-    output = model(data)
-    output.sum().backward()
-    print(data)
-    print(output)
-    print(data.grad)
+    model=CNA(3, 3, nn.BatchNorm2d, nn.LeakyReLU(), 0.5)
+    output = model(torch.randn(8,3,16,16))
+    print(output.shape)
