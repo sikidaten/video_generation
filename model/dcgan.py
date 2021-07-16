@@ -93,10 +93,10 @@ class DCGAN(nn.Module):
         # self.generator = Generator(zsize, feature, 3, activation=g_activation)
         # self.discriminator = discriminator if discriminator else Discriminator(3, feature, activation=d_activation,size=size)
         self.generator = BaseModel(in_ch=zsize, out_ch=3, feature=feature, scale_factor=2, size=size,
-                                   lastactivation=LG(), activation=g_activation, is_G=True,norm_layer=nn.BatchNorm2d)
+                                   lastactivation=LG(), activation=g_activation, is_G=True,norm_layer=nn.InstanceNorm2d)
         self.discriminator = BaseModel(in_ch=3, out_ch=1, feature=feature, size=size, scale_factor=0.5,
                                        lastactivation=nn.Identity(), activation=d_activation,
-                                       is_G=False,norm_layer=nn.BatchNorm2d) if discriminator is None else discriminator
+                                       is_G=False,norm_layer=nn.InstanceNorm2d) if discriminator is None else discriminator
         # self.generator.apply(self.weights_init)
         # self.discriminator.apply(self.weights_init)
         self.zviz = Zviz({'G': self.generator, 'D': self.discriminator} if enable_zviz else {})
