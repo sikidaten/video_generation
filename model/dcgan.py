@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from model.common import CNA
 from model.layers.lg import LG
 from utils.spectral_norm import spectral_norm
-
+from model.layers.upsample_ident import UpSample_Ident
 
 class BaseModel(nn.Module):
     def __init__(self, in_ch, out_ch, feature, size, scale_factor, lastactivation, activation, norm_layer, is_G=False,
@@ -22,11 +22,12 @@ class BaseModel(nn.Module):
         if snnorm: self.outconv = spectral_norm(self.outconv)
         self.lastactivation = lastactivation
         self.scale_factor = scale_factor
+        self.upsample=UpSample_Ident(2)
 
     def forward(self, x):
         x = self.inconv(x)
         for layer in self.convs:
-            x = layer(x) + F.upsample_bilinear(x, scale_factor=self.scale_factor)
+            x = layer(x) + self.upsample(x, scale_factor=self.scale_factor)
         x = self.outconv(x)
         x = self.lastactivation(x)
         return x
