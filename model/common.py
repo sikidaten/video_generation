@@ -40,12 +40,18 @@ class CNA(nn.Module):
         self.conv2=nn.Conv2d(feature,feature,kernel,padding=(kernel-1)//2)
         self.conv3=nn.Conv2d(feature,feature,kernel,padding=(kernel-1)//2)
         self.normlayer=norm_layer(feature) if not norm_layer is None else None
+        self.normlayer2=norm_layer(feature) if not norm_layer is None else None
+        self.normlayer3=norm_layer(feature) if not norm_layer is None else None
         self.activation=activation
         self.scale_factor=scale_factor
     def forward(self,x):
         x=self.conv3(x)
+        if x.shape[2]*x.shape[3]>=4 and self.normlayer is not None:
+            x=self.normlayer3(x)
         x=self.activation(x)
         x=self.conv2(x)
+        if x.shape[2]*x.shape[3]>=4 and self.normlayer is not None:
+            x=self.normlayer2(x)
         x=self.activation(x)
         x=self.conv(x)
         if x.shape[2]*x.shape[3]>=4 and self.normlayer is not None:
