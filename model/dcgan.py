@@ -4,17 +4,18 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from model.common import CNA
+from model.layers.lg import LG
 from utils.spectral_norm import spectral_norm
 
 
 class BaseModel(nn.Module):
-    def __init__(self, in_ch, out_ch, feature, size, scale_factor, lastactivation, activation, is_G=False,
+    def __init__(self, in_ch, out_ch, feature, size, scale_factor, lastactivation, activation, norm_layer, is_G=False,
                  snnorm=False):
         super(BaseModel, self).__init__()
         numrange = int(np.log2(size))
         self.inconv = nn.Conv2d(in_ch, feature, 1)
         self.convs = nn.ModuleList(
-            [CNA(feature=feature, kernel=3, norm_layer=nn.BatchNorm2d if scale_factor == 2 else nn.InstanceNorm2d,
+            [CNA(feature=feature, kernel=3, norm_layer=norm_layer,
                  activation=activation, scale_factor=scale_factor) for i in range(numrange)])
         self.outconv = nn.Conv2d(feature, out_ch, 3, padding=1)
         if snnorm: self.inconv = spectral_norm(self.inconv)
@@ -92,10 +93,10 @@ class DCGAN(nn.Module):
         # self.generator = Generator(zsize, feature, 3, activation=g_activation)
         # self.discriminator = discriminator if discriminator else Discriminator(3, feature, activation=d_activation,size=size)
         self.generator = BaseModel(in_ch=zsize, out_ch=3, feature=feature, scale_factor=2, size=size,
-                                   lastactivation=nn.Tanh(), activation=g_activation, is_G=True)
+                                   lastactivation=LG(), activation=g_activation, is_G=True,norm_layer=nn.BatchNorm2d)
         self.discriminator = BaseModel(in_ch=3, out_ch=1, feature=feature, size=size, scale_factor=0.5,
                                        lastactivation=nn.Identity(), activation=d_activation,
-                                       is_G=False) if discriminator is None else discriminator
+                                       is_G=False,norm_layer=nn.BatchNorm2d) if discriminator is None else discriminator
         # self.generator.apply(self.weights_init)
         # self.discriminator.apply(self.weights_init)
         self.zviz = Zviz({'G': self.generator, 'D': self.discriminator} if enable_zviz else {})
@@ -121,7 +122,7 @@ class DCGAN(nn.Module):
             nn.init.normal_(m.weight.data, 1.0, 0.02)
             nn.init.constant_(m.bias.data, 0)
 
-    def trainbatch(self, noise, realimg, trainD=True):
+    def trainbatch(self, noise, realimg):
         # self.zviz.clear()
         B, C, H, W = realimg.shape
         fake = self.generator(noise)
@@ -153,10 +154,10 @@ class DCGAN(nn.Module):
 if __name__ == '__main__':
     size = 256
     generator = BaseModel(in_ch=128, out_ch=3, feature=128, scale_factor=2, size=size, lastactivation=nn.Tanh(),
-                          activation=nn.ReLU())
+                          activation=nn.ReLU(), norm_layer=nn.BatchNorm2d)
     discriminator = BaseModel(in_ch=3, out_ch=1, feature=128, size=size, scale_factor=0.5, lastactivation=nn.Identity(),
                               activation=nn.ReLU(),
-                              is_G=False, )
+                              is_G=False, norm_layer=nn.BatchNorm2d)
     print(generator)
     output = generator(torch.randn(8, 128, 1, 1))
     # print(discriminator)
