@@ -22,12 +22,12 @@ class BaseModel(nn.Module):
         if snnorm: self.outconv = spectral_norm(self.outconv)
         self.lastactivation = lastactivation
         self.scale_factor = scale_factor
-        self.upsample=UpSample_Ident(2)
+        self.upsample=UpSample_Ident(scale_factor)
 
     def forward(self, x):
         x = self.inconv(x)
         for layer in self.convs:
-            x = layer(x) + self.upsample(x, scale_factor=self.scale_factor)
+            x = layer(x) + self.upsample(x)
         x = self.outconv(x)
         x = self.lastactivation(x)
         return x
