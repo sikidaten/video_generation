@@ -89,11 +89,11 @@ class Plotter:
             p.line(x,y,name=name,color=colors[idx])
         save(p)
 
-    def grad_plot(self,model,idx):
+    def grad_plot(self,model,idx,tag=''):
         for name, p in model.named_parameters():
-            self.addvalue({f'{name}_mean': p.grad.mean().item()},idx)
-            self.addvalue({f'{name}_max': p.grad.max().item()},idx)
-            self.addvalue({f'{name}_min': p.grad.min().item()},idx)
+            self.addvalue({f'{tag}{name}_mean': p.grad.mean().item()},idx)
+            self.addvalue({f'{tag}{name}_max': p.grad.max().item()},idx)
+            self.addvalue({f'{tag}{name}_min': p.grad.min().item()},idx)
 
 def getitem_num(L,num):
     if len(L)>num:
