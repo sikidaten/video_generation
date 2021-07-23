@@ -1,5 +1,7 @@
 import matplotlib.pyplot as plt
-
+from bokeh.plotting import ColumnDataSource,figure,output_file,save
+from bokeh.palettes import Spectral11
+import itertools as I
 plt.switch_backend('agg')
 # def addvalue(dict,key,value,epoch):
 #     if not key in dict.keys():
@@ -75,7 +77,29 @@ class Plotter:
             ax.legend()
         plt.savefig(self.graphpath)
         plt.cla()
+    def savebokeh(self):
+        output_file(self.graphpath.replace('jpg','html'))
+        TOOLTIPS=[("name","$name"),("value","$y")]
+        p=figure(tooltips=TOOLTIPS)
+        xs=[self.graphdic[key][0] for key in self.graphdic]
+        ys=[self.graphdic[key][1] for key in self.graphdic]
+        names=[key for key in self.graphdic]
+        colors=getitem_num(Spectral11,len(xs))
+        for idx,(x,y,name) in enumerate(zip(xs,ys,names)):
+            p.line(x,y,name=name,color=colors[idx])
+        save(p)
 
+    def grad_plot(self,model,idx):
+        for name, p in model.named_parameters():
+            self.addvalue({f'{name}_mean': p.grad.mean().item()},idx)
+            self.addvalue({f'{name}_max': p.grad.max().item()},idx)
+            self.addvalue({f'{name}_min': p.grad.min().item()},idx)
+
+def getitem_num(L,num):
+    if len(L)>num:
+        return L[:num]
+    else:
+        return L*(num//len(L))+L[:num%len(L)]
 
 if __name__ == '__main__':
     P = Plotter('tmp.png')

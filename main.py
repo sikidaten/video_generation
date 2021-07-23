@@ -1,4 +1,7 @@
 import os
+
+import matplotlib.pyplot as plt
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import torch
 from torchvision.utils import save_image
@@ -24,7 +27,7 @@ def operate():
     for i, realimg in enumerate(loader):
         B, C, H, W = realimg.shape
         noise = torch.randn(B, args.zsize, 1, 1)
-        outstats = model.trainbatch(noise.to(device), realimg.to(device))
+        outstats = model.trainbatch(noise.to(device), realimg.to(device),idx=i)
         fake = outstats['image']['fake']
         fakemvci.iter(inception(fake.detach().to(device))[0])
         print(f'{i} ',end='')
@@ -33,9 +36,12 @@ def operate():
         print()
         plotter.addvalue(outstats['loss'],totalidx)
 
+
         generatedimages = (model.generator(testinput) * 0.5) + 0.5
         save_image(generatedimages, f'{savefolder}/{i}.jpg')
-        plotter.savedic()
+        # plotter.savedic()
+        plotter.savebokeh()
+        grad_plotter.savebokeh()
         if i % 1000 == 0 and i != 0:
 
             # get FID
@@ -77,6 +83,7 @@ if __name__ == '__main__':
     device = 'cuda' if torch.cuda.is_available() and not args.cpu else 'cpu'
     savefolder = 'data/' + args.savefolder
     plotter=Plotter(graphpath=f'{savefolder}/graph.jpg')
+    grad_plotter=Plotter(graphpath=f'{savefolder}/gradgraph.jpg')
     from gtmodel import InceptionV3
     inception = InceptionV3([3]).to(device)
     e = 0
@@ -134,7 +141,7 @@ if __name__ == '__main__':
         model = DCGAN(optimizerG=optimizer, optimizerD=optimizer, lossDreal=lossDreal, lossDfake=lossDfake,
                       lossG=lossG, zsize=args.zsize, feature=args.feature, d_activation=d_activation,
                       g_activation=g_activation, enable_zviz=not args.disable_zviz, discriminator=discriminator,
-                      size=args.size)
+                      size=args.size,plotter=grad_plotter)
     if args.dataset == 'celeba':
         # loader = torch.utils.data.DataLoader(
         #     CelebADataset(torchvision.datasets.CelebA(args.datasetpath, 'all', download=True), args.size, args.zsize,debug=args.debug),

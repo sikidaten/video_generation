@@ -8,8 +8,8 @@ class lg_func(torch.autograd.Function):
         # ctx._min = _min
         # ctx._max = _max
         # ctx.save_for_backward(x)
-        # return x.clamp(min=_min, max=_max)
-        return F.tanh(x)
+        return x.clamp(min=_min, max=_max)
+        # return F.tanh(x)
 
     @staticmethod
     def backward(ctx, grad):

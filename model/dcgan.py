@@ -1,12 +1,12 @@
 import numpy as np
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 from model.common import CNA
 from model.layers.lg import LG
-from utils.spectral_norm import spectral_norm
 from model.layers.upsample_ident import UpSample_Ident
+from utils.spectral_norm import spectral_norm
+from core import Plotter
 
 class BaseModel(nn.Module):
     def __init__(self, in_ch, out_ch, feature, size, scale_factor, lastactivation, activation, norm_layer, is_G=False,
@@ -22,7 +22,7 @@ class BaseModel(nn.Module):
         if snnorm: self.outconv = spectral_norm(self.outconv)
         self.lastactivation = lastactivation
         self.scale_factor = scale_factor
-        self.upsample=UpSample_Ident(scale_factor)
+        self.upsample = UpSample_Ident(scale_factor)
 
     def forward(self, x):
         x = self.inconv(x)
@@ -88,16 +88,18 @@ from zviz import Zviz
 class DCGAN(nn.Module):
     def __init__(self, optimizerG, optimizerD, lossDreal, lossDfake, lossG, zsize, feature, size,
                  g_activation=nn.ReLU(inplace=True), d_activation=nn.LeakyReLU(0.2, inplace=True), enable_zviz=True,
-                 discriminator=None, mode_seek_lambda=1):
+                 discriminator=None, mode_seek_lambda=1, plotter=None):
         super(DCGAN, self).__init__()
         self.mode_seek_lambda = mode_seek_lambda
         # self.generator = Generator(zsize, feature, 3, activation=g_activation)
         # self.discriminator = discriminator if discriminator else Discriminator(3, feature, activation=d_activation,size=size)
         self.generator = BaseModel(in_ch=zsize, out_ch=3, feature=feature, scale_factor=2, size=size,
-                                   lastactivation=LG(), activation=g_activation, is_G=True,norm_layer=nn.InstanceNorm2d)
+                                   lastactivation=LG(), activation=g_activation, is_G=True,
+                                   norm_layer=nn.InstanceNorm2d)
         self.discriminator = BaseModel(in_ch=3, out_ch=1, feature=feature, size=size, scale_factor=0.5,
                                        lastactivation=nn.Identity(), activation=d_activation,
-                                       is_G=False,norm_layer=nn.InstanceNorm2d) if discriminator is None else discriminator
+                                       is_G=False,
+                                       norm_layer=nn.InstanceNorm2d) if discriminator is None else discriminator
         # self.generator.apply(self.weights_init)
         # self.discriminator.apply(self.weights_init)
         self.zviz = Zviz({'G': self.generator, 'D': self.discriminator} if enable_zviz else {})
@@ -113,6 +115,7 @@ class DCGAN(nn.Module):
         self.lossDreal = lossDreal
         self.lossDfake = lossDfake
         self.lossG = lossG
+        self.plotter =plotter
         if not enable_zviz: self.zviz.disable_forever()
 
     def weights_init(self, m):
@@ -123,7 +126,7 @@ class DCGAN(nn.Module):
             nn.init.normal_(m.weight.data, 1.0, 0.02)
             nn.init.constant_(m.bias.data, 0)
 
-    def trainbatch(self, noise, realimg):
+    def trainbatch(self, noise, realimg,idx):
         # self.zviz.clear()
         B, C, H, W = realimg.shape
         fake = self.generator(noise)
@@ -137,6 +140,9 @@ class DCGAN(nn.Module):
         gradients_penalty.backward()
         self.zviz.backward(lossDreal)
         self.zviz.backward(lossDfake)
+
+        self.plotter.grad_plot(self.discriminator,idx)
+
         self.zviz.step('optD')
         self.zviz.zero_grad('optD')
 
@@ -144,6 +150,7 @@ class DCGAN(nn.Module):
         lossG = self.lossG(fakeout).mean()
         self.zviz.backward(lossG)
         self.zviz.step('optG')
+        self.plotter.grad_plot(self.discriminator,idx)
         self.zviz.zero_grad('optG')
         self.zviz.zero_grad('optD')
         self.zviz.clear()
