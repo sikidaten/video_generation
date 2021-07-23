@@ -78,7 +78,6 @@ if __name__ == '__main__':
     epoch = args.epoch
     device = 'cuda' if torch.cuda.is_available() and not args.cpu else 'cpu'
     savefolder = 'data/' + args.savefolder
-    writer=SummaryWriter(log_dir=f'tfb/{args.savefolder}')
     from gtmodel import InceptionV3
     inception = InceptionV3([3]).to(device)
     e = 0
@@ -94,6 +93,7 @@ if __name__ == '__main__':
         shutil.rmtree(f'tfb/{args.savefolder}', ignore_errors=True)
         shutil.rmtree(f'{savefolder}', ignore_errors=True)
     os.makedirs(savefolder, exist_ok=True)
+    writer=SummaryWriter(log_dir=f'tfb/{args.savefolder}')
     if args.g_activation == 'relu':
         g_activation = nn.ReLU(inplace=True)
     elif args.g_activation == 'hswish':
