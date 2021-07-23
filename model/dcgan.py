@@ -141,7 +141,12 @@ class DCGAN(nn.Module):
         self.zviz.backward(lossDreal)
         self.zviz.backward(lossDfake)
 
-        self.plotter.grad_plot(self.discriminator,idx,tag='D')
+        dic={}
+        for name,p in self.discriminator.named_parameters():
+            dic[f'{name}:max']=p.grad.max().item()
+            dic[f'{name}:mean'] = p.grad.mean().item()
+            dic[f'{name}:min'] = p.grad.min().item()
+        self.plotter.add_scalars('D_grad',dic,idx)
 
         self.zviz.step('optD')
         self.zviz.zero_grad('optD')
@@ -150,7 +155,12 @@ class DCGAN(nn.Module):
         lossG = self.lossG(fakeout).mean()
         self.zviz.backward(lossG)
         self.zviz.step('optG')
-        self.plotter.grad_plot(self.discriminator,idx,tag='G')
+        dic={}
+        for name,p in self.generator.named_parameters():
+            dic[f'{name}:max']=p.grad.max().item()
+            dic[f'{name}:mean'] = p.grad.mean().item()
+            dic[f'{name}:min'] = p.grad.min().item()
+        self.plotter.add_scalars('G_grad',dic,idx)
         self.zviz.zero_grad('optG')
         self.zviz.zero_grad('optD')
         self.zviz.clear()

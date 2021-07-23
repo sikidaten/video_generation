@@ -17,14 +17,13 @@ from model.dcgan import DCGAN
 from utils.tfrecord import TFRDataloader
 from model.common import SQLinear
 import shutil
-from core import Plotter
-
+from torch.utils.tensorboard import SummaryWriter
 
 def operate():
     global totalidx
-    plotter.savedic()
     fakemvci = U.MeanCoVariance_iter(device)
     for i, realimg in enumerate(loader):
+        writer.close()
         B, C, H, W = realimg.shape
         noise = torch.randn(B, args.zsize, 1, 1)
         outstats = model.trainbatch(noise.to(device), realimg.to(device),idx=i)
@@ -34,19 +33,16 @@ def operate():
         for key in outstats['loss']:
             print(f'{key},{outstats["loss"][key]:.2f},',end='')
         print()
-        plotter.addvalue(outstats['loss'],totalidx)
+        writer.add_scalars('loss',outstats['loss'],global_step=totalidx)
 
 
         generatedimages = (model.generator(testinput) * 0.5) + 0.5
         save_image(generatedimages, f'{savefolder}/{i}.jpg')
-        # plotter.savedic()
-        plotter.savebokeh()
-        grad_plotter.savebokeh()
         if i % 1000 == 0 and i != 0:
 
             # get FID
             fid = U.fid(realsigma, realmu, *fakemvci.get(isbias=True))
-            plotter.addvalue({'acc:fid':fid},totalidx)
+            writer.add_scalars('acc',{'acc:fid':fid},global_step=totalidx)
             print(f'fid:{fid:.2f}')
 
             model.to(device)
@@ -82,8 +78,7 @@ if __name__ == '__main__':
     epoch = args.epoch
     device = 'cuda' if torch.cuda.is_available() and not args.cpu else 'cpu'
     savefolder = 'data/' + args.savefolder
-    plotter=Plotter(graphpath=f'{savefolder}/graph.jpg')
-    grad_plotter=Plotter(graphpath=f'{savefolder}/gradgraph.jpg')
+    writer=SummaryWriter(log_dir=f'tfb/{args.savefolder}')
     from gtmodel import InceptionV3
     inception = InceptionV3([3]).to(device)
     e = 0
@@ -141,7 +136,7 @@ if __name__ == '__main__':
         model = DCGAN(optimizerG=optimizer, optimizerD=optimizer, lossDreal=lossDreal, lossDfake=lossDfake,
                       lossG=lossG, zsize=args.zsize, feature=args.feature, d_activation=d_activation,
                       g_activation=g_activation, enable_zviz=not args.disable_zviz, discriminator=discriminator,
-                      size=args.size,plotter=grad_plotter)
+                      size=args.size,plotter=writer)
     if args.dataset == 'celeba':
         # loader = torch.utils.data.DataLoader(
         #     CelebADataset(torchvision.datasets.CelebA(args.datasetpath, 'all', download=True), args.size, args.zsize,debug=args.debug),
