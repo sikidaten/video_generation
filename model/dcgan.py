@@ -98,8 +98,8 @@ class DCGAN(nn.Module):
                                        is_G=False,
                                        norm_layer=nn.InstanceNorm2d) if discriminator is None else discriminator
 
-        # self.generator = Generator(zsize, 3)
-        # self.discriminator = Discriminator(3)
+        # self.generator = Generator(in_ch=zsize,feature=feature)
+        # self.discriminator = Discriminator(in_ch=3,feature=feature)
 
         self.generator.apply(self.weights_init)
         self.discriminator.apply(self.weights_init)
