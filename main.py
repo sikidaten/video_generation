@@ -23,7 +23,6 @@ def operate():
     global totalidx
     fakemvci = U.MeanCoVariance_iter(device)
     for i, realimg in enumerate(loader):
-        writer.close()
         B, C, H, W = realimg.shape
         noise = torch.randn(B, args.zsize, 1, 1)
         outstats = model.trainbatch(noise.to(device), realimg.to(device),idx=i)
@@ -113,11 +112,11 @@ if __name__ == '__main__':
         lossDfake = lambda x: SQLinear()(F.relu(x + 1)).mean()
         lossG = lambda x: SQLinear()(F.relu(-x + 1)).mean()
     elif args.loss == 'bce':
-        lossDreal = lambda x: F.binary_cross_entropy_with_logits(x.reshape(-1),
+        lossDreal = lambda x: F.binary_cross_entropy(F.sigmoid(x).reshape(-1),
                                                                  torch.ones(x.shape[0], device=x.device))
-        lossDfake = lambda x: F.binary_cross_entropy_with_logits(x.reshape(-1),
+        lossDfake = lambda x: F.binary_cross_entropy(F.sigmoid(x).reshape(-1),
                                                                  torch.zeros(x.shape[0], device=x.device))
-        lossG = lambda x: F.binary_cross_entropy_with_logits(x.reshape(-1), torch.ones(x.shape[0], device=x.device))
+        lossG = lambda x: F.binary_cross_entropy(F.sigmoid(x).reshape(-1), torch.ones(x.shape[0], device=x.device))
     elif args.loss == 'mse':
         lossDreal = lambda x: ((x - 1) ** 2).mean()
         lossDfake = lambda x: (x ** 2).mean()
@@ -164,3 +163,4 @@ if __name__ == '__main__':
     # model=model.to(device)
     testinput = torch.randn(args.batchsize, args.zsize, 1, 1)
     operate()
+    writer.close()

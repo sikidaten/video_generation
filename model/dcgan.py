@@ -34,24 +34,23 @@ class BaseModel(nn.Module):
 
 
 class Generator(nn.Module):
-    def __init__(self, in_ch, feature, size, out_ch=3, activation=nn.ReLU(), lastactivation=nn.Tanh(), snnorm=False):
+    def __init__(self, in_ch, feature=64, activation=nn.ReLU()):
         super(Generator, self).__init__()
         conv0 = nn.ConvTranspose2d(in_ch, feature * 8, 4, 1, 0, bias=False)
-        conv0 = spectral_norm(conv0)
         self.main = nn.Sequential(
             conv0,
             nn.BatchNorm2d(feature * 8),
             activation,
-            spectral_norm(nn.ConvTranspose2d(feature * 8, feature * 4, 4, 2, 1, bias=False), enable=snnorm),
+            nn.ConvTranspose2d(feature * 8, feature * 4, 4, 2, 1, bias=False),
             nn.BatchNorm2d(feature * 4),
             activation,
-            spectral_norm(nn.ConvTranspose2d(feature * 4, feature * 2, 4, 2, 1, bias=False), enable=snnorm),
+            nn.ConvTranspose2d(feature * 4, feature * 2, 4, 2, 1, bias=False),
             nn.BatchNorm2d(feature * 2),
             activation,
-            spectral_norm(nn.ConvTranspose2d(feature * 2, feature, 4, 2, 1, bias=False), enable=snnorm),
+            nn.ConvTranspose2d(feature * 2, feature, 4, 2, 1, bias=False),
             nn.BatchNorm2d(feature),
             activation,
-            spectral_norm(nn.ConvTranspose2d(feature, 3, 4, 2, 1, bias=False), enable=snnorm),
+            nn.ConvTranspose2d(feature, 3, 4, 2, 1, bias=False),
             nn.Tanh()
         )
 
@@ -60,22 +59,22 @@ class Generator(nn.Module):
 
 
 class Discriminator(nn.Module):
-    def __init__(self, in_ch, feature, size, out_ch=1, activation=nn.LeakyReLU(0.2, inplace=True), snnorm=False):
+    def __init__(self, in_ch, feature=64, activation=nn.LeakyReLU(0.2, inplace=True), snnorm=False):
         super(Discriminator, self).__init__()
 
         self.main = nn.Sequential(
-            spectral_norm(nn.Conv2d(in_ch, feature, 4, 2, 1, bias=False), enable=snnorm),
+            nn.Conv2d(in_ch, feature, 4, 2, 1, bias=False),
             activation,
-            spectral_norm(nn.Conv2d(feature, feature * 2, 4, 2, 1, bias=False), enable=snnorm),
+            nn.Conv2d(feature, feature * 2, 4, 2, 1, bias=False),
             nn.BatchNorm2d(feature * 2),
             activation,
-            spectral_norm(nn.Conv2d(feature * 2, feature * 4, 4, 2, 1, bias=False), enable=snnorm),
+            nn.Conv2d(feature * 2, feature * 4, 4, 2, 1, bias=False),
             nn.BatchNorm2d(feature * 4),
             activation,
-            spectral_norm(nn.Conv2d(feature * 4, feature * 8, 4, 2, 1, bias=False), enable=snnorm),
+            nn.Conv2d(feature * 4, feature * 8, 4, 2, 1, bias=False),
             nn.BatchNorm2d(feature * 8),
             activation,
-            spectral_norm(nn.Conv2d(feature * 8, 1, 4, 1, 0, bias=False), enable=snnorm),
+            nn.Conv2d(feature * 8, 1, 4, 1, 0, bias=False),
         )
 
     def forward(self, x):
@@ -91,8 +90,6 @@ class DCGAN(nn.Module):
                  discriminator=None, mode_seek_lambda=1, plotter=None):
         super(DCGAN, self).__init__()
         self.mode_seek_lambda = mode_seek_lambda
-        # self.generator = Generator(zsize, feature, 3, activation=g_activation)
-        # self.discriminator = discriminator if discriminator else Discriminator(3, feature, activation=d_activation,size=size)
         self.generator = BaseModel(in_ch=zsize, out_ch=3, feature=feature, scale_factor=2, size=size,
                                    lastactivation=LG(), activation=g_activation, is_G=True,
                                    norm_layer=nn.InstanceNorm2d)
@@ -100,16 +97,19 @@ class DCGAN(nn.Module):
                                        lastactivation=nn.Identity(), activation=d_activation,
                                        is_G=False,
                                        norm_layer=nn.InstanceNorm2d) if discriminator is None else discriminator
-        # self.generator.apply(self.weights_init)
-        # self.discriminator.apply(self.weights_init)
+
+        # self.generator = Generator(zsize, 3)
+        # self.discriminator = Discriminator(3)
+
+        self.generator.apply(self.weights_init)
+        self.discriminator.apply(self.weights_init)
         self.zviz = Zviz({'G': self.generator, 'D': self.discriminator} if enable_zviz else {})
         self.optG = optimizerG(self.generator.parameters(), lr=0.00005, betas=(0, 0.999))
         self.optD = optimizerD(self.discriminator.parameters(), lr=0.0002, betas=(0, 0.999))
 
-        # print(self.generator)
-        # exit()
-        # self.optG = optimizerG(self.generator.parameters(),lr=1e-5)
-        # self.optD = optimizerD(self.discriminator.parameters(),lr=1e-4)
+        # self.optG = optimizerG(self.generator.parameters(),lr=2e-4)
+        # self.optD = optimizerD(self.discriminator.parameters(),lr=2e-4)
+
         self.zviz.setoptimizer(self.optG, 'optG')
         self.zviz.setoptimizer(self.optD, 'optD')
         self.lossDreal = lossDreal
