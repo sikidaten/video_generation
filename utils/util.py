@@ -1,8 +1,8 @@
 import numpy as np
 import torch
-from scipy import linalg
+import torch.nn as nn
 import torch.nn.functional as F
-
+from scipy import linalg
 
 def min(x, a):
     return torch.stack([torch.zeros_like(x) + a, x]).min(0)[0]
@@ -126,6 +126,11 @@ def get_singular_with_SN(model):
             ret[key]=_u@_w@_v
     assert ret!={}
     return ret
+def normalize_grad(model):
+    with torch.no_grad():
+        for p in model.parameters():
+            s=p.grad.shape
+            p.grad=F.softmax(p.grad.view(-1)).view(s)
 
 if __name__ == '__main__':
     print(linerinterpolateroundlog2(64,512,3))

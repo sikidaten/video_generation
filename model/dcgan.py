@@ -7,6 +7,7 @@ from model.layers.lg import LG
 from model.layers.upsample_ident import UpSample_Ident
 from utils.spectral_norm import spectral_norm
 from core import Plotter
+import utils.util as U
 
 class BaseModel(nn.Module):
     def __init__(self, in_ch, out_ch, feature, size, scale_factor, lastactivation, activation, norm_layer, is_G=False,
@@ -141,6 +142,7 @@ class DCGAN(nn.Module):
         self.zviz.backward(lossDreal)
         self.zviz.backward(lossDfake)
 
+        U.normalize_grad(self.discriminator)
         if idx%10==0:
             dic={}
             for name,p in self.discriminator.named_parameters():
@@ -155,7 +157,7 @@ class DCGAN(nn.Module):
         fakeout = self.discriminator(fake)
         lossG = self.lossG(fakeout).mean()
         self.zviz.backward(lossG)
-        self.zviz.step('optG')
+        U.normalize_grad(self.generator)
         if idx%10==0:
             dic={}
             for name,p in self.generator.named_parameters():
@@ -163,6 +165,8 @@ class DCGAN(nn.Module):
                 if p.grad.mean().abs() > 0.1: dic[f'{name}:mean'] = p.grad.mean().item()
                 if p.grad.min().abs() > 0.1: dic[f'{name}:min'] = p.grad.min().item()
             self.plotter.add_scalars('G_grad',dic,idx)
+        self.zviz.step('optG')
+
         self.zviz.zero_grad('optG')
         self.zviz.zero_grad('optD')
         self.zviz.clear()
@@ -178,8 +182,13 @@ if __name__ == '__main__':
     discriminator = BaseModel(in_ch=3, out_ch=1, feature=128, size=size, scale_factor=0.5, lastactivation=nn.Identity(),
                               activation=nn.ReLU(),
                               is_G=False, norm_layer=nn.BatchNorm2d)
+    generator = Generator(in_ch=128)
+    discriminator = Discriminator(in_ch=3)
+    print(discriminator)
     print(generator)
-    output = generator(torch.randn(8, 128, 1, 1))
+    # output = generator(torch.randn(8, 128, 1, 1))
     # print(discriminator)
     # output = discriminator(torch.randn(8, 3, size, size))
-    print(output.shape)
+    # print(output.shape)
+    # for n,_ in generator.named_parameters():
+    #     print(n)
