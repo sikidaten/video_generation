@@ -129,8 +129,8 @@ def get_singular_with_SN(model):
 def normalize_grad(model):
     with torch.no_grad():
         for p in model.parameters():
-            s=p.grad.shape
-            p.grad=F.softmax(p.grad.view(-1)).view(s)
+            h=(max(p.grad.max().abs(),p.grad.min().abs())+1e-5)
+            p.grad=p.grad/h
 
 if __name__ == '__main__':
     print(linerinterpolateroundlog2(64,512,3))
