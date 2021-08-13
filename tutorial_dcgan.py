@@ -23,7 +23,7 @@ random.seed(manualSeed)
 torch.manual_seed(manualSeed)
 
 # Root directory for dataset
-folder="TUTORIALresnet18"
+folder="TUTORIAL"
 dataroot = "../data/celeba/"
 savefolder=f'data/{folder}/'
 tfbfolder=f'tfb/{folder}/'
@@ -168,22 +168,24 @@ class Discriminator(nn.Module):
             nn.LeakyReLU(0.2, inplace=True),
             # state size. (ndf*8) x 4 x 4
             nn.Conv2d(ndf * 8, 1, 4, 1, 0, bias=False),
-            nn.Sigmoid()
         )
 
     def forward(self, input):
         return self.main(input)
 
-def savegrad(self,gradinput,gradoutput):
+def savegrad(self, gradinput, gradoutput):
+    i_grad=len(graddic)//3
     with torch.no_grad():
         size=64
-        gradoutput=gradoutput[0]
-        # print(self.__class__.__name__)
-        # print(f"{gradinput[0].shape if gradinput[0] !=None else None}->{gradoutput[0].shape}")
-        gradoutput=(gradoutput-gradoutput.min())/(gradoutput.max()-gradoutput.min())
-        gradoutput=gradoutput.abs().max(dim=0)[0].max(dim=0)[0].unsqueeze(0).unsqueeze(0)
-        img=F.interpolate(gradoutput,size=(size,size)).squeeze(0)
+        gout=gradoutput[0]
+        gout= (gout - gout.min()) / (gout.max() - gout.min())
+        gout=gout.abs().max(dim=0)[0].max(dim=0)[0].unsqueeze(0).unsqueeze(0)
+        img=F.interpolate(gout, size=(size, size)).squeeze(0)
         gradimgs.append(img)
+        if gout.max().abs()>0.1:graddic[self.__class__.__name__ + f'{i_grad}:max']=gout.max().item()
+        if gout.mean().abs()>0.1:graddic[self.__class__.__name__ + f'{i_grad}:mean']=gout.mean().item()
+        if gout.min().abs()>0.1:graddic[self.__class__.__name__ + f'{i_grad}:min']=gout.min().item()
+
 for name,module in netG.named_modules():
     print(module.__class__.__name__)
     if module.__class__.__name__ in ['Tanh','ConvTranspose2d','ReLU','BatchNorm2d']:
@@ -191,7 +193,7 @@ for name,module in netG.named_modules():
 # Create the Discriminator
 netD = Discriminator(ngpu).to(device)
 
-netD=resnet18(num_classes=1).to(device)
+# netD=resnet18(num_classes=1).to(device)
 # Handle multi-gpu if desired
 if (device.type == 'cuda') and (ngpu > 1):
     netD = nn.DataParallel(netD, list(range(ngpu)))
@@ -224,7 +226,6 @@ optimizerG = optim.Adam(netG.parameters(), lr=lr, betas=(beta1, 0.999))
 img_list = []
 G_losses = []
 D_losses = []
-
 writer = SummaryWriter(log_dir=tfbfolder)
 print("Starting Training Loop...")
 # For each epoch
@@ -236,6 +237,7 @@ for epoch in range(num_epochs):
         # (1) Update D network: maximize log(D(x)) + log(1 - D(G(z)))
         ###########################
         ## Train with all-real batch
+        graddic = {}
         netD.zero_grad()
         # Format batch
         real_cpu = data[0].to(device)
@@ -248,9 +250,11 @@ for epoch in range(num_epochs):
         # Calculate gradients for D in backward pass
         errD_real.backward()
         D_x = output.mean().item()
+        writer.add_scalars('Dreal',graddic,epoch*len(dataloader)+i)
 
         ## Train with all-fake batch
         # Generate batch of latent vectors
+        graddic={}
         noise = torch.randn(b_size, nz, 1, 1, device=device)
         # Generate fake image batch with G
         fake = netG(noise)
@@ -261,6 +265,7 @@ for epoch in range(num_epochs):
         errD_fake = criterion(output, label)
         # Calculate the gradients for this batch, accumulated (summed) with previous gradients
         errD_fake.backward()
+        writer.add_scalars('Dfake',graddic,epoch*len(dataloader)+i)
         if i%10==0:
             dic={}
             for name,p in netD.named_parameters():
@@ -278,6 +283,7 @@ for epoch in range(num_epochs):
         # (2) Update G network: maximize log(D(G(z)))
         ###########################
         netG.zero_grad()
+        graddic={}
         label.fill_(real_label)  # fake labels are real for generator cost
         # Since we just updated D, perform another forward pass of all-fake batch through D
         output = netD(fake).view(-1)
@@ -285,6 +291,7 @@ for epoch in range(num_epochs):
         errG = criterion(output, label)
         # Calculate gradients for G
         errG.backward()
+        writer.add_scalars('G',graddic,epoch*len(dataloader)+i)
         if i%10==0:
             dic={}
             for name,p in netG.named_parameters():
