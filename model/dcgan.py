@@ -28,7 +28,7 @@ class BaseModel(nn.Module):
     def forward(self, x):
         x = self.inconv(x)
         for layer in self.convs:
-            x = layer(x) + self.upsample(x)
+            x = layer(x)
         x = self.outconv(x)
         x = self.lastactivation(x)
         return x
@@ -137,7 +137,7 @@ class DCGAN(nn.Module):
         fakeout = self.discriminator(fake.detach())
         lossDfake = self.lossDfake(fakeout).mean()
         gradients_penalty = torch.autograd.grad(outputs=lossDreal, inputs=realimg, retain_graph=True)[0]
-        gradients_penalty = (gradients_penalty * torch.randn_like(gradients_penalty, requires_grad=True)).mean()
+        gradients_penalty = ((gradients_penalty * torch.randn_like(gradients_penalty, requires_grad=True))**2).mean()
         gradients_penalty.backward()
         self.zviz.backward(lossDreal)
         self.zviz.backward(lossDfake)
@@ -182,8 +182,8 @@ if __name__ == '__main__':
     discriminator = BaseModel(in_ch=3, out_ch=1, feature=128, size=size, scale_factor=0.5, lastactivation=nn.Identity(),
                               activation=nn.ReLU(),
                               is_G=False, norm_layer=nn.BatchNorm2d)
-    generator = Generator(in_ch=128)
-    discriminator = Discriminator(in_ch=3)
+    # generator = Generator(in_ch=128)
+    # discriminator = Discriminator(in_ch=3)
     print(discriminator)
     print(generator)
     # output = generator(torch.randn(8, 128, 1, 1))
