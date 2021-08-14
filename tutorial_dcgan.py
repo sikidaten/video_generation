@@ -1,20 +1,20 @@
 from __future__ import print_function
 
+import os
 # %matplotlib inline
 import random
+import shutil
+from functools import partial
 
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
 import torch.utils.data
-import torch.nn.functional as F
 import torchvision.datasets as dset
 import torchvision.transforms as transforms
-import torchvision.utils as vutils
-from torchvision.utils import save_image
-from torchvision.models.resnet import resnet18
 from torch.utils.tensorboard import SummaryWriter
-import os
-import shutil
+from torchvision.utils import save_image
+
 # Set random seed for reproducibility
 manualSeed = 999
 # manualSeed = random.randint(1, 10000) # use if you want new results
@@ -23,12 +23,12 @@ random.seed(manualSeed)
 torch.manual_seed(manualSeed)
 
 # Root directory for dataset
-folder="TUTORIAL"
+folder = "TUTORIAL"
 dataroot = "../data/celeba/"
-savefolder=f'data/{folder}/'
-tfbfolder=f'tfb/{folder}/'
-if os.path.exists(savefolder):shutil.rmtree(savefolder)
-if os.path.exists(tfbfolder):shutil.rmtree(tfbfolder)
+savefolder = f'data/{folder}/'
+tfbfolder = f'tfb/{folder}/'
+if os.path.exists(savefolder): shutil.rmtree(savefolder)
+if os.path.exists(tfbfolder): shutil.rmtree(tfbfolder)
 os.mkdir(savefolder)
 os.mkdir(tfbfolder)
 # Number of workers for dataloader
@@ -189,25 +189,31 @@ netD.apply(weights_init)
 # Print the model
 print(netD)
 
-def savegrad(self, gradinput, gradoutput,thres=0.01):
-    i_grad=len(graddic)//3
+
+def savegrad(self, gradinput, gradoutput, modulename, thres=0.01):
+    global i_grad
+    i_grad += 1
     with torch.no_grad():
-        size=64
-        gout=gradoutput[0]
-        if gout.max().abs()>thres:graddic[f'{i_grad}:max'+self.__class__.__name__]=gout.max().item()
-        if gout.mean().abs()>thres:graddic[f'{i_grad}:mean'+self.__class__.__name__]=gout.mean().item()
-        if gout.min().abs()>thres:graddic[f'{i_grad}:min'+self.__class__.__name__ ]=gout.min().item()
-        gout= (gout - gout.min()) / (gout.max() - gout.min())
-        gout=gout.abs().max(dim=0)[0].max(dim=0)[0].unsqueeze(0).unsqueeze(0)
-        img=F.interpolate(gout, size=(size, size)).squeeze(0)
+        size = 64
+        gout = gradoutput[0]
+        if gout.max().abs() > thres: graddic[f'{modulename}:{i_grad}:max' + self.__class__.__name__] = gout.max().item()
+        if gout.mean().abs() > thres: graddic[
+            f'{modulename}:{i_grad}:mean' + self.__class__.__name__] = gout.mean().item()
+        if gout.min().abs() > thres: graddic[f'{modulename}:{i_grad}:min' + self.__class__.__name__] = gout.min().item()
+        print(f'{modulename}:{i_grad}:{self.__class__.__name__}')
+        gout = (gout - gout.min()) / (gout.max() - gout.min())
+        gout = gout.abs().max(dim=0)[0].max(dim=0)[0].unsqueeze(0).unsqueeze(0)
+        img = F.interpolate(gout, size=(size, size)).squeeze(0)
         gradimgs.append(img)
 
-for name,module in list(netG.named_modules())+list(netD.named_modules()):
-    print(module.__class__.__name__)
-    if module.__class__.__name__ in ['Tanh','ConvTranspose2d','ReLU','BatchNorm2d','Conv2d','LeakyReLU']:
-        module.register_backward_hook(savegrad)
+
+for m_name, modules in zip(['D', 'G'], [netD.named_modules(), netG.named_modules()]):
+    for name, module in modules:
+        print(module.__class__.__name__)
+        if module.__class__.__name__ in ['Tanh', 'ConvTranspose2d', 'ReLU', 'BatchNorm2d', 'Conv2d', 'LeakyReLU']:
+            module.register_backward_hook(partial(savegrad, modulename=m_name))
 # Initialize BCELoss function
-criterion = lambda x,y:F.binary_cross_entropy(F.sigmoid(x),y)
+criterion = lambda x, y: F.binary_cross_entropy(F.sigmoid(x), y)
 
 # Create batch of latent vectors that we will use to visualize
 #  the progression of the generator
@@ -233,12 +239,13 @@ print("Starting Training Loop...")
 for epoch in range(num_epochs):
     # For each batch in the dataloader
     for i, data in enumerate(dataloader, 0):
-        gradimgs=[]
+        gradimgs = []
         ############################
         # (1) Update D network: maximize log(D(x)) + log(1 - D(G(z)))
         ###########################
         ## Train with all-real batch
         graddic = {}
+        i_grad = 0
         netD.zero_grad()
         # Format batch
         real_cpu = data[0].to(device)
@@ -251,11 +258,12 @@ for epoch in range(num_epochs):
         # Calculate gradients for D in backward pass
         errD_real.backward()
         D_x = output.mean().item()
-        writer.add_scalars('Dreal',graddic,epoch*len(dataloader)+i)
+        writer.add_scalars('Dreal', graddic, epoch * len(dataloader) + i)
 
         ## Train with all-fake batch
         # Generate batch of latent vectors
-        graddic={}
+        graddic = {}
+        i_grad = 0
         noise = torch.randn(b_size, nz, 1, 1, device=device)
         # Generate fake image batch with G
         fake = netG(noise)
@@ -266,14 +274,14 @@ for epoch in range(num_epochs):
         errD_fake = criterion(output, label)
         # Calculate the gradients for this batch, accumulated (summed) with previous gradients
         errD_fake.backward()
-        writer.add_scalars('Dfake',graddic,epoch*len(dataloader)+i)
-        if i%10==0:
-            dic={}
-            for name,p in netD.named_parameters():
-                if p.grad.max().abs()>0.1:dic[f'{name}:max']=p.grad.max().item()
+        writer.add_scalars('Dfake', graddic, epoch * len(dataloader) + i)
+        if i % 10 == 0:
+            dic = {}
+            for name, p in netD.named_parameters():
+                if p.grad.max().abs() > 0.1: dic[f'{name}:max'] = p.grad.max().item()
                 if p.grad.mean().abs() > 0.1: dic[f'{name}:mean'] = p.grad.mean().item()
                 if p.grad.min().abs() > 0.1: dic[f'{name}:min'] = p.grad.min().item()
-            writer.add_scalars('D_grad',dic,epoch*len(dataloader)+i)
+            writer.add_scalars('D_grad', dic, epoch * len(dataloader) + i)
         D_G_z1 = output.mean().item()
         # Compute error of D as sum over the fake and the real batches
         errD = errD_real + errD_fake
@@ -284,7 +292,8 @@ for epoch in range(num_epochs):
         # (2) Update G network: maximize log(D(G(z)))
         ###########################
         netG.zero_grad()
-        graddic={}
+        graddic = {}
+        i_grad = 0
         label.fill_(real_label)  # fake labels are real for generator cost
         # Since we just updated D, perform another forward pass of all-fake batch through D
         output = netD(fake).view(-1)
@@ -292,14 +301,14 @@ for epoch in range(num_epochs):
         errG = criterion(output, label)
         # Calculate gradients for G
         errG.backward()
-        writer.add_scalars('G',graddic,epoch*len(dataloader)+i)
-        if i%10==0:
-            dic={}
-            for name,p in netG.named_parameters():
-                if p.grad.max().abs()>0.1:dic[f'{name}:max']=p.grad.max().item()
+        writer.add_scalars('G', graddic, epoch * len(dataloader) + i)
+        if i % 10 == 0:
+            dic = {}
+            for name, p in netG.named_parameters():
+                if p.grad.max().abs() > 0.1: dic[f'{name}:max'] = p.grad.max().item()
                 if p.grad.mean().abs() > 0.1: dic[f'{name}:mean'] = p.grad.mean().item()
                 if p.grad.min().abs() > 0.1: dic[f'{name}:min'] = p.grad.min().item()
-            writer.add_scalars('G_grad',dic,epoch*len(dataloader)+i)
+            writer.add_scalars('G_grad', dic, epoch * len(dataloader) + i)
         D_G_z2 = output.mean().item()
         # Update G
         optimizerG.step()
@@ -310,11 +319,12 @@ for epoch in range(num_epochs):
                  errD.item(), errG.item(), D_x, D_G_z1, D_G_z2))
         with torch.no_grad():
             fake = netG(fixed_noise).detach().cpu()
-        save_image((fake+1)/2, f'{savefolder}/{epoch}_{i}.jpg')
+        save_image((fake + 1) / 2, f'{savefolder}/{epoch}_{i}.jpg')
         save_image(torch.stack(gradimgs), f'{savefolder}/grad_{epoch}_{i}.jpg')
 
         # Save Losses for plotting later
         G_losses.append(errG.item())
         D_losses.append(errD.item())
-        writer.add_scalars('loss',{'Dreal':errD_real,'Dfake':errD_fake,'G':errG},global_step=epoch*len(dataloader)+i)
+        writer.add_scalars('loss', {'Dreal': errD_real, 'Dfake': errD_fake, 'G': errG},
+                           global_step=epoch * len(dataloader) + i)
 writer.close()
