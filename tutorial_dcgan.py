@@ -173,23 +173,7 @@ class Discriminator(nn.Module):
     def forward(self, input):
         return self.main(input)
 
-def savegrad(self, gradinput, gradoutput):
-    i_grad=len(graddic)//3
-    with torch.no_grad():
-        size=64
-        gout=gradoutput[0]
-        gout= (gout - gout.min()) / (gout.max() - gout.min())
-        gout=gout.abs().max(dim=0)[0].max(dim=0)[0].unsqueeze(0).unsqueeze(0)
-        img=F.interpolate(gout, size=(size, size)).squeeze(0)
-        gradimgs.append(img)
-        if gout.max().abs()>0.1:graddic[self.__class__.__name__ + f'{i_grad}:max']=gout.max().item()
-        if gout.mean().abs()>0.1:graddic[self.__class__.__name__ + f'{i_grad}:mean']=gout.mean().item()
-        if gout.min().abs()>0.1:graddic[self.__class__.__name__ + f'{i_grad}:min']=gout.min().item()
 
-for name,module in netG.named_modules():
-    print(module.__class__.__name__)
-    if module.__class__.__name__ in ['Tanh','ConvTranspose2d','ReLU','BatchNorm2d']:
-        module.register_backward_hook(savegrad)
 # Create the Discriminator
 netD = Discriminator(ngpu).to(device)
 
@@ -205,6 +189,23 @@ netD.apply(weights_init)
 # Print the model
 print(netD)
 
+def savegrad(self, gradinput, gradoutput,thres=0.01):
+    i_grad=len(graddic)//3
+    with torch.no_grad():
+        size=64
+        gout=gradoutput[0]
+        if gout.max().abs()>thres:graddic[f'{i_grad}:max'+self.__class__.__name__]=gout.max().item()
+        if gout.mean().abs()>thres:graddic[f'{i_grad}:mean'+self.__class__.__name__]=gout.mean().item()
+        if gout.min().abs()>thres:graddic[f'{i_grad}:min'+self.__class__.__name__ ]=gout.min().item()
+        gout= (gout - gout.min()) / (gout.max() - gout.min())
+        gout=gout.abs().max(dim=0)[0].max(dim=0)[0].unsqueeze(0).unsqueeze(0)
+        img=F.interpolate(gout, size=(size, size)).squeeze(0)
+        gradimgs.append(img)
+
+for name,module in list(netG.named_modules())+list(netD.named_modules()):
+    print(module.__class__.__name__)
+    if module.__class__.__name__ in ['Tanh','ConvTranspose2d','ReLU','BatchNorm2d','Conv2d','LeakyReLU']:
+        module.register_backward_hook(savegrad)
 # Initialize BCELoss function
 criterion = lambda x,y:F.binary_cross_entropy(F.sigmoid(x),y)
 
