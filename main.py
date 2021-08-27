@@ -25,7 +25,7 @@ def operate():
     for i, realimg in enumerate(loader):
         B, C, H, W = realimg.shape
         noise = torch.randn(B, args.zsize, 1, 1)
-        outstats = model.trainbatch(noise.to(device), realimg.to(device),idx=i)
+        outstats = model.trainbatch(noise.to(device), realimg.to(device),idx=totalidx)
         fake = outstats['image']['fake']
         fakemvci.iter(inception(fake.detach().to(device))[0])
         print(f'{i} ',end='')
@@ -57,7 +57,7 @@ if __name__ == '__main__':
     parser.add_argument('--model', default='dcgan')
     parser.add_argument('--dataset', default='celeba')
     parser.add_argument('--optimizer', default='adam')
-    parser.add_argument('--zsize', type=int, default=128)
+    parser.add_argument('--zsize', type=int, default=100)
     parser.add_argument('--epoch', default=10**10, type=int)
     parser.add_argument('--savefolder', default='tmp')
     parser.add_argument('--checkpoint', default=None)

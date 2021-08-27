@@ -36,11 +36,10 @@ class BaseModel(nn.Module):
 
 
 class Generator(nn.Module):
-    def __init__(self, in_ch, feature=64, activation=nn.ReLU()):
+    def __init__(self, in_ch, feature=64, activation=nn.ReLU(True)):
         super(Generator, self).__init__()
-        conv0 = nn.ConvTranspose2d(in_ch, feature * 8, 4, 1, 0, bias=False)
         self.main = nn.Sequential(
-            conv0,
+            nn.ConvTranspose2d(in_ch, feature * 8, 4, 1, 0, bias=False),
             nn.BatchNorm2d(feature * 8),
             activation,
             nn.ConvTranspose2d(feature * 8, feature * 4, 4, 2, 1, bias=False),
@@ -124,8 +123,8 @@ class DCGAN(nn.Module):
         # self.optG = optimizerG(self.generator.parameters(), lr=0.00005, betas=(0, 0.999))
         # self.optD = optimizerD(self.discriminator.parameters(), lr=0.0002, betas=(0, 0.999))
 
-        self.optG = optimizerG(self.generator.parameters(),lr=2e-4)
-        self.optD = optimizerD(self.discriminator.parameters(),lr=2e-4)
+        self.optG = optimizerG(self.generator.parameters(),lr=2e-4,betas=(0.5,0.999))
+        self.optD = optimizerD(self.discriminator.parameters(),lr=2e-4,betas=(0.5,0.999))
 
         self.zviz.setoptimizer(self.optG, 'optG')
         self.zviz.setoptimizer(self.optD, 'optD')
