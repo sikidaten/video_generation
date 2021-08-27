@@ -1,8 +1,9 @@
+from functools import partial
+
 import numpy as np
 import torch
 import torch.nn as nn
-
-from model.common import CNA
+import torch.nn.functional as F
 from model.layers.lg import LG
 from model.layers.upsample_ident import UpSample_Ident
 from utils.spectral_norm import spectral_norm
@@ -83,6 +84,21 @@ class Discriminator(nn.Module):
 
 
 from zviz import Zviz
+def savegrad(self, gradinput, gradoutput, modulename, baseself,size=64,thres=0.01):
+    baseself.i_grad += 1
+    with torch.no_grad():
+        gout = gradoutput[0]
+        if gout.max().abs() > thres: baseself.graddic[f'{modulename}:{baseself.i_grad}:max' + self.__class__.__name__] = gout.max().item()
+        if gout.mean().abs() > thres: baseself.graddic[
+            f'{modulename}:{baseself.i_grad}:mean' + self.__class__.__name__] = gout.mean().item()
+        if gout.min().abs() > thres: baseself.graddic[f'{modulename}:{baseself.i_grad}:min' + self.__class__.__name__] = gout.min().item()
+        # print(f'{modulename}:{baseself.i_grad}:{self.__class__.__name__}')
+        gout = (gout - gout.min()) / (gout.max() - gout.min())
+        gout = gout.abs().max(dim=0)[0].max(dim=0)[0].unsqueeze(0).unsqueeze(0)
+        img = F.interpolate(gout, size=(size, size)).squeeze(0)
+        baseself.gradimgs.append(img)
+
+
 
 
 class DCGAN(nn.Module):
@@ -117,7 +133,16 @@ class DCGAN(nn.Module):
         self.lossDfake = lossDfake
         self.lossG = lossG
         self.plotter =plotter
+        self.i_grad=0
+        self.graddic={}
+        self.gradimgs=[]
         if not enable_zviz: self.zviz.disable_forever()
+
+        for m_name, modules in zip(['G', 'D'], [self.generator.named_modules(), self.discriminator.named_modules()]):
+            for name, module in modules:
+                print(module.__class__.__name__)
+                if module.__class__.__name__ in ['Tanh', 'ConvTranspose2d', 'ReLU', 'BatchNorm2d', 'Conv2d', 'LeakyReLU']:
+                    module.register_backward_hook(partial(savegrad, modulename=m_name,baseself=self))
 
     def weights_init(self, m):
         classname = m.__class__.__name__
@@ -140,10 +165,14 @@ class DCGAN(nn.Module):
         # gradients_penalty = ((gradients_penalty * torch.randn_like(gradients_penalty, requires_grad=True))**2).mean()
         # gradients_penalty.backward()
         gradients_penalty=torch.zeros(1)
+        self.i_grad=0
+        self.graddic={}
         self.zviz.backward(lossDreal)
+        self.plotter.add_scalars("Dreal",self.graddic,idx)
+        self.i_grad=0
+        self.graddic={}
         self.zviz.backward(lossDfake)
-
-        U.normalize_grad(self.discriminator)
+        self.plotter.add_scalars("Dfake",self.graddic,idx)
         if idx%10==0:
             dic={}
             for name,p in self.discriminator.named_parameters():
@@ -157,8 +186,10 @@ class DCGAN(nn.Module):
 
         fakeout = self.discriminator(fake)
         lossG = self.lossG(fakeout).mean()
+        self.i_grad=0
+        self.graddic={}
         self.zviz.backward(lossG)
-        U.normalize_grad(self.generator)
+        self.plotter.add_scalars('G',self.graddic,idx)
         if idx%10==0:
             dic={}
             for name,p in self.generator.named_parameters():
