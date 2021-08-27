@@ -30,37 +30,6 @@ class SQLinear(nn.Module):
     def forward(self,x):
         return _sqlinear(cut=self.cut,linear=self.linear).apply(x)
 
-class CNA(nn.Module):
-    def __init__(self, feature, kernel,  activation, scale_factor,norm_layer):
-        super(CNA, self).__init__()
-        if scale_factor==0.5:
-            self.conv=nn.Conv2d(feature,feature,kernel,padding=(kernel-1)//2,stride=2)
-        else:
-            self.conv=nn.ConvTranspose2d(feature,feature,kernel,padding=(kernel-1)//2,stride=2,output_padding=1)
-        self.conv2=nn.Conv2d(feature,feature,kernel,padding=(kernel-1)//2)
-        self.conv3=nn.Conv2d(feature,feature,kernel,padding=(kernel-1)//2)
-        self.normlayer=norm_layer(feature) if not norm_layer is None else None
-        self.normlayer2=norm_layer(feature) if not norm_layer is None else None
-        self.normlayer3=norm_layer(feature) if not norm_layer is None else None
-        self.activation=activation
-        self.scale_factor=scale_factor
-    def forward(self,x):
-        x=self.conv3(x)
-        if x.shape[2]*x.shape[3]>=4 and self.normlayer is not None:
-            x=self.normlayer3(x)
-        x=self.activation(x)
-        x=self.conv2(x)
-        if x.shape[2]*x.shape[3]>=4 and self.normlayer is not None:
-            x=self.normlayer2(x)
-        x=self.activation(x)
-        x=self.conv(x)
-        if x.shape[2]*x.shape[3]>=4 and self.normlayer is not None:
-            x=self.normlayer(x)
-        x=self.activation(x)
-        return x
-
-
-
 class InterpolateConv(nn.Module):
     def __init__(self, in_ch, out_ch, scale_factor, activate=nn.ReLU(inplace=True), batchnorm=True, snnorm=True):
         super(InterpolateConv, self).__init__()

@@ -200,7 +200,7 @@ def savegrad(self, gradinput, gradoutput, modulename, thres=0.01):
         if gout.mean().abs() > thres: graddic[
             f'{modulename}:{i_grad}:mean' + self.__class__.__name__] = gout.mean().item()
         if gout.min().abs() > thres: graddic[f'{modulename}:{i_grad}:min' + self.__class__.__name__] = gout.min().item()
-        print(f'{modulename}:{i_grad}:{self.__class__.__name__}')
+        # print(f'{modulename}:{i_grad}:{self.__class__.__name__}')
         gout = (gout - gout.min()) / (gout.max() - gout.min())
         gout = gout.abs().max(dim=0)[0].max(dim=0)[0].unsqueeze(0).unsqueeze(0)
         img = F.interpolate(gout, size=(size, size)).squeeze(0)

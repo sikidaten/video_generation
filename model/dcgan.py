@@ -91,25 +91,25 @@ class DCGAN(nn.Module):
                  discriminator=None, mode_seek_lambda=1, plotter=None):
         super(DCGAN, self).__init__()
         self.mode_seek_lambda = mode_seek_lambda
-        self.generator = BaseModel(in_ch=zsize, out_ch=3, feature=feature, scale_factor=2, size=size,
-                                   lastactivation=LG(), activation=g_activation, is_G=True,
-                                   norm_layer=nn.InstanceNorm2d)
-        self.discriminator = BaseModel(in_ch=3, out_ch=1, feature=feature, size=size, scale_factor=0.5,
-                                       lastactivation=nn.Identity(), activation=d_activation,
-                                       is_G=False,
-                                       norm_layer=nn.InstanceNorm2d) if discriminator is None else discriminator
+        # self.generator = BaseModel(in_ch=zsize, out_ch=3, feature=feature, scale_factor=2, size=size,
+        #                            lastactivation=LG(), activation=g_activation, is_G=True,
+        #                            norm_layer=nn.InstanceNorm2d)
+        # self.discriminator = BaseModel(in_ch=3, out_ch=1, feature=feature, size=size, scale_factor=0.5,
+        #                                lastactivation=nn.Identity(), activation=d_activation,
+        #                                is_G=False,
+        #                                norm_layer=nn.InstanceNorm2d) if discriminator is None else discriminator
 
-        # self.generator = Generator(in_ch=zsize,feature=feature)
-        # self.discriminator = Discriminator(in_ch=3,feature=feature)
+        self.generator = Generator(in_ch=zsize,feature=64)
+        self.discriminator = Discriminator(in_ch=3,feature=64)
 
         self.generator.apply(self.weights_init)
         self.discriminator.apply(self.weights_init)
         self.zviz = Zviz({'G': self.generator, 'D': self.discriminator} if enable_zviz else {})
-        self.optG = optimizerG(self.generator.parameters(), lr=0.00005, betas=(0, 0.999))
-        self.optD = optimizerD(self.discriminator.parameters(), lr=0.0002, betas=(0, 0.999))
+        # self.optG = optimizerG(self.generator.parameters(), lr=0.00005, betas=(0, 0.999))
+        # self.optD = optimizerD(self.discriminator.parameters(), lr=0.0002, betas=(0, 0.999))
 
-        # self.optG = optimizerG(self.generator.parameters(),lr=2e-4)
-        # self.optD = optimizerD(self.discriminator.parameters(),lr=2e-4)
+        self.optG = optimizerG(self.generator.parameters(),lr=2e-4)
+        self.optD = optimizerD(self.discriminator.parameters(),lr=2e-4)
 
         self.zviz.setoptimizer(self.optG, 'optG')
         self.zviz.setoptimizer(self.optD, 'optD')
@@ -136,9 +136,10 @@ class DCGAN(nn.Module):
         lossDreal = self.lossDreal(realout).mean()
         fakeout = self.discriminator(fake.detach())
         lossDfake = self.lossDfake(fakeout).mean()
-        gradients_penalty = torch.autograd.grad(outputs=lossDreal, inputs=realimg, retain_graph=True)[0]
-        gradients_penalty = ((gradients_penalty * torch.randn_like(gradients_penalty, requires_grad=True))**2).mean()
-        gradients_penalty.backward()
+        # gradients_penalty = torch.autograd.grad(outputs=lossDreal, inputs=realimg, retain_graph=True)[0]
+        # gradients_penalty = ((gradients_penalty * torch.randn_like(gradients_penalty, requires_grad=True))**2).mean()
+        # gradients_penalty.backward()
+        gradients_penalty=torch.zeros(1)
         self.zviz.backward(lossDreal)
         self.zviz.backward(lossDfake)
 
