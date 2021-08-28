@@ -95,7 +95,7 @@ def savegrad(self, gradinput, gradoutput, modulename, baseself,size=64,thres=0.0
         gout = (gout - gout.min()) / (gout.max() - gout.min())
         gout = gout.abs().max(dim=0)[0].max(dim=0)[0].unsqueeze(0).unsqueeze(0)
         img = F.interpolate(gout, size=(size, size)).squeeze(0)
-        baseself.gradimgs.append(img)
+        # baseself.gradimgs.append(img)
 
 
 
