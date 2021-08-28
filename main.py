@@ -1,5 +1,5 @@
 import os
-
+import subprocess
 import matplotlib.pyplot as plt
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -164,3 +164,4 @@ if __name__ == '__main__':
     testinput = torch.randn(args.batchsize, args.zsize, 1, 1)
     operate()
     writer.close()
+    subprocess.run([f'ffmpeg -r 120 -i {savefolder}/%d.jpg -vcodec libx265 -pix_fmt yuv420p {savefolder}/out.mp4'])
